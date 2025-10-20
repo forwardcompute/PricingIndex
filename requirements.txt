@@ -1,0 +1,9 @@
+pandas
+numpy
+requests
+beautifulsoup4
+SQLAlchemy
+playwright
+nest_asyncio
+pytest
+pytest-mock
