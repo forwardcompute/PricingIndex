@@ -1,22 +1,29 @@
-name: Price-IQ / HCPI - Hourly
+name: Forward Compute Index — Hourly Build & Deploy
 
 on:
   schedule:
-    - cron: "5 * * * *"
-  workflow_dispatch:
+    - cron: "5 * * * *"     # run at minute 5 each hour
+  workflow_dispatch:        # allow manual runs
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write           # needed if you enable commit-back step
+  pages: write              # deploy to GitHub Pages
+  id-token: write           # OIDC auth for Pages
 
 concurrency:
-  group: github-pages
+  group: "github-pages"
   cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: "3.12"
+  # Toggle commit-back of generated data into the repo:
+  # 'false' = only deploy to Pages (default), 'true' = also commit CSV/JSON
+  COMMIT_DATA: 'false'
 
 jobs:
   build-and-bundle:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,37 +31,69 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
 
-      - name: Install deps
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run pipeline
+      - name: Run scrape + index pipeline
         env:
+          # Use your DB if set; otherwise falls back to local sqlite
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
         run: |
           set -euo pipefail
-          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" --quiet
+          python master_runner.py --cron --quiet --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}"
 
-      - name: Prepare static site
+      # (Optional) Commit generated data into the repo so it appears in the Files tab.
+      # Flip COMMIT_DATA env to 'true' at the top to enable.
+      - name: Commit generated data to repository
+        if: env.COMMIT_DATA == 'true'
+        uses: EndBug/add-and-commit@v9
+        with:
+          add: |
+            data/derived/*.csv
+            data/history/*.csv
+            hcpi/*.json
+            hcpi/*history*.csv
+          message: "ci: update data snapshots [skip ci]"
+          author_name: github-actions
+          author_email: actions@github.com
+
+      - name: Prepare static site (public/)
         run: |
           set -euo pipefail
-          mkdir -p public public/data/derived public/hcpi
+          mkdir -p public public/data/derived public/data/history public/hcpi
+
+          # Dashboard HTML (prefer docs/index.html, fallback to root index.html)
           if [ -f docs/index.html ]; then
             cp -f docs/index.html public/index.html
           elif [ -f index.html ]; then
             cp -f index.html public/index.html
           else
-            printf '%s\n' '<!doctype html><meta charset="utf-8"><title>Dashboard</title><body style="font:14px system-ui;padding:24px"><h1>Dashboard placeholder</h1><p>Add <code>docs/index.html</code> or <code>index.html</code> to your repo.</p></body>' > public/index.html
+            # tiny fallback so Pages is never blank
+            cat > public/index.html <<'HTML'
+            <!doctype html><meta charset="utf-8">
+            <title>Forward Compute Index</title>
+            <body style="font:14px system-ui;padding:24px;color:#e7edf3;background:#0f1216">
+              <h1>Forward Compute Index</h1>
+              <p>No dashboard found. Add <code>docs/index.html</code> to the repo.</p>
+            </body>
+            HTML
           fi
-          cp -f data/derived/*.csv public/data/derived/ 2>/dev/null || true
-          cp -f hcpi/*.json        public/hcpi/          2>/dev/null || true
-          echo "==== public tree ===="
+
+          # Copy latest + history artifacts for the dashboard
+          cp -f data/derived/*.csv   public/data/derived/  2>/dev/null || true
+          cp -f data/history/*.csv   public/data/history/  2>/dev/null || true
+          cp -f hcpi/*.json          public/hcpi/          2>/dev/null || true
+          cp -f hcpi/*history*.csv   public/hcpi/          2>/dev/null || true
+
+          echo "==== public/ tree ===="
           find public -maxdepth 3 -type f -print
 
-      - name: Upload artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: public
@@ -62,14 +101,15 @@ jobs:
   deploy:
     needs: build-and-bundle
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     permissions:
       pages: write
       id-token: write
-    environment:
-      name: github-pages
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
 
 
