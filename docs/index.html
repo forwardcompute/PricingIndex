@@ -6,109 +6,185 @@
 <title>Forward Compute Index</title>
 <link rel="icon" href="data:,">
 <style>
-:root{--bg:#0f1216;--panel:#171b21;--muted:#202532;--text:#e7edf3;--sub:#9fb0c3;--accent:#7bd7ff;--ok:#27d980;}
+:root{--bg:#0f1216;--panel:#171b21;--muted:#202532;--text:#e7edf3;--sub:#9fb0c3;--accent:#7bd7ff;--ok:#27d980;--warn:#ffa726;}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;padding:20px}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;padding:20px;max-width:1400px;margin:0 auto}
 h1{margin:0 0 6px;font-size:28px}
+h3{margin:0 0 12px;font-size:18px;font-weight:600}
 .small{color:var(--sub);font-size:13px}
 .select,select,input,button{background:var(--muted);color:var(--text);border:1px solid #2c3240;border-radius:8px;padding:8px 10px;font:inherit}
-select{appearance:none}
-input[readonly]{opacity:.75}
-button{cursor:pointer;background:var(--accent);color:#052535;font-weight:700;border:none}
+select{appearance:none;cursor:pointer}
+input{width:100%}
+input[type="number"]{text-align:right}
+button{cursor:pointer;background:var(--accent);color:#052535;font-weight:600;border:none;transition:opacity .2s}
+button:hover{opacity:.85}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.card{background:var(--panel);border:1px solid #222836;border-radius:12px;padding:16px;margin-top:12px}
+.grid{display:grid;gap:12px;margin-top:12px}
+.grid-2{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.card{background:var(--panel);border:1px solid #222836;border-radius:12px;padding:18px;margin-top:12px}
 .center{text-align:center}
 .big{font-size:64px;line-height:1;font-weight:800;color:var(--accent);letter-spacing:1px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}
-.badge{display:inline-flex;align-items:center;gap:6px;background:#1e2634;border:1px solid #2c3143;border-radius:999px;padding:2px 10px;color:#bcd0e6;font-size:12px}
-footer{margin-top:16px;color:var(--sub);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#1e2634;border:1px solid #2c3143;border-radius:999px;padding:2px 10px;color:#bcd0e6;font-size:12px;font-weight:500}
+.field{display:flex;flex-direction:column;gap:4px;min-width:140px}
+.field label{color:var(--sub);font-size:13px;font-weight:500}
+.result-box{background:var(--muted);border:1px solid #2c3240;border-radius:8px;padding:14px;margin-top:12px}
+.result-value{font-size:24px;font-weight:700;color:var(--accent)}
+.result-label{color:var(--sub);font-size:12px;margin-top:4px}
+.comparison-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-top:12px}
+.provider-card{background:var(--muted);border:1px solid #2c3240;border-radius:8px;padding:12px;cursor:pointer;transition:all .2s}
+.provider-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.provider-card.selected{border-color:var(--accent);background:#1a2533}
+.provider-name{font-weight:600;margin-bottom:6px}
+.provider-price{font-size:20px;font-weight:700;color:var(--accent)}
+.provider-details{color:var(--sub);font-size:11px;margin-top:4px}
+footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
+.metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2c3240}
+.metric:last-child{border:none}
+.metric-label{color:var(--sub)}
+.metric-value{font-weight:600}
+.positive{color:var(--ok)}
+.negative{color:#ff6b6b}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
 </style>
 </head>
 <body>
   <h1>Forward Compute Index</h1>
   <div class="small">Real-time regional and category GPU pricing benchmark</div>
 
-  <div class="row" style="margin-top:10px">
-    <label class="small">Region</label>
-    <select id="region" class="select">
-      <option>US-East</option>
-      <option>US-Central</option>
-      <option>US-West</option>
-      <option>US (All)</option>
-    </select>
-
-    <label class="small">Category</label>
-    <select id="category" class="select">
-      <option>All</option>
-      <option>Big 3 Hyperscalers</option>
-      <option>Major GPU Clouds</option>
-      <option>Serverless</option>
-      <option>Specialized</option>
-    </select>
-
-    <button id="btnRefresh">Update</button>
-  </div>
-
+  <!-- Index Display -->
   <div class="card center">
     <div id="indexVal" class="big">–</div>
-    <div class="small"><span class="dot"></span>Live</div>
+    <div class="small"><span class="dot"></span>Live Index</div>
     <div id="updated" class="small" style="margin-top:4px">Updated: –</div>
-  </div>
-
-  <!-- =================== TOTAL COST (Provider-driven) =================== -->
-  <div class="card">
-    <div class="row" style="justify-content:space-between;align-items:flex-end">
-      <h3 style="margin:0">Total Cost Calculator</h3>
-      <span class="badge" id="calcSliceBadge">–</span>
-    </div>
-
-    <div class="row" style="margin-top:8px">
-      <div>
-        <div class="small" style="margin-bottom:4px">Provider</div>
-        <select id="provSelect" class="select" style="min-width:240px"></select>
-      </div>
-
-      <div>
-        <div class="small" style="margin-bottom:4px">Price $/GPU-hr</div>
-        <input id="price" class="select" type="number" step="0.01" readonly placeholder="auto">
-      </div>
-
-      <div>
-        <div class="small" style="margin-bottom:4px">GPU count</div>
-        <input id="count" class="select" type="number" step="1" value="8">
-      </div>
-
-      <div>
-        <div class="small" style="margin-bottom:4px">Duration</div>
-        <select id="duration" class="select">
-          <option>1 hour</option>
-          <option>1 day</option>
-          <option>1 week</option>
-          <option>1 month</option>
+    
+    <div class="row" style="margin-top:16px;justify-content:center">
+      <div class="field">
+        <label>Region</label>
+        <select id="region" class="select">
+          <option>US-East</option>
+          <option>US-Central</option>
+          <option>US-West</option>
+          <option>US (All)</option>
         </select>
       </div>
 
-      <button id="btnCost">Calculate</button>
-    </div>
+      <div class="field">
+        <label>Category</label>
+        <select id="category" class="select">
+          <option>All</option>
+          <option>Big 3 Hyperscalers</option>
+          <option>Major GPU Clouds</option>
+          <option>Serverless</option>
+          <option>Specialized</option>
+        </select>
+      </div>
 
-    <div id="calcSummary" class="small" style="margin-top:8px">Select a provider to estimate cost.</div>
+      <button id="btnRefresh" style="align-self:flex-end">Update</button>
+    </div>
   </div>
 
-  <!-- =================== ROI (Calculator) =================== -->
+  <!-- Provider Comparison -->
   <div class="card">
-    <h3 style="margin:0 0 8px">ROI Estimator</h3>
-    <div class="row">
-      <div>
-        <div class="small" style="margin-bottom:4px">Revenue $/GPU-hr</div>
-        <input id="revenue" class="select" type="number" step="0.01" value="0.68">
-      </div>
-      <div>
-        <div class="small" style="margin-bottom:4px">Utilisation (0–1)</div>
-        <input id="util" class="select" type="number" step="0.01" value="0.70">
-      </div>
-      <button id="btnROI">Estimate ROI</button>
+    <div class="section-header">
+      <h3>Provider Comparison</h3>
+      <span class="badge" id="comparisonBadge">All Providers</span>
     </div>
-    <div id="roiOut" class="small" style="margin-top:8px">ROI: –</div>
+    <div id="providerGrid" class="comparison-grid">
+      <div class="small" style="grid-column:1/-1;text-align:center;padding:20px">Loading providers...</div>
+    </div>
+  </div>
+
+  <!-- Cost Calculator -->
+  <div class="grid grid-2">
+    <div class="card">
+      <h3>Total Cost Calculator</h3>
+      
+      <div class="field">
+        <label>Selected Provider</label>
+        <input id="selectedProvider" type="text" readonly placeholder="Click a provider above" style="background:var(--muted);cursor:default">
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+        <div class="field">
+          <label>GPU Count</label>
+          <input id="count" type="number" step="1" value="8" min="1">
+        </div>
+
+        <div class="field">
+          <label>Duration</label>
+          <select id="duration" class="select">
+            <option>1 hour</option>
+            <option>1 day</option>
+            <option>1 week</option>
+            <option>1 month</option>
+            <option>3 months</option>
+            <option>6 months</option>
+            <option>1 year</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="result-box">
+        <div class="metric">
+          <span class="metric-label">Price per GPU-hour</span>
+          <span class="metric-value" id="costPrice">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Total hours</span>
+          <span class="metric-value" id="costHours">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">GPU-hours</span>
+          <span class="metric-value" id="costGPUHours">–</span>
+        </div>
+        <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
+          <span class="metric-label" style="font-size:15px;font-weight:600">Total Cost</span>
+          <span class="result-value" id="costTotal">–</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROI Estimator -->
+    <div class="card">
+      <h3>ROI Estimator</h3>
+      
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Your Revenue ($/GPU-hr)</label>
+          <input id="revenue" type="number" step="0.01" value="0.95" min="0">
+        </div>
+
+        <div class="field">
+          <label>GPU Utilization (%)</label>
+          <input id="util" type="number" step="1" value="70" min="0" max="100">
+        </div>
+      </div>
+
+      <div class="result-box">
+        <div class="metric">
+          <span class="metric-label">Provider Cost</span>
+          <span class="metric-value" id="roiCost">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Your Revenue (@ utilization)</span>
+          <span class="metric-value" id="roiRevenue">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Gross Profit</span>
+          <span class="metric-value" id="roiProfit">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Margin</span>
+          <span class="metric-value" id="roiMargin">–</span>
+        </div>
+        <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
+          <span class="metric-label" style="font-size:15px;font-weight:600">ROI</span>
+          <span class="result-value" id="roiValue">–</span>
+        </div>
+        <div class="result-label" id="roiBreakeven"></div>
+      </div>
+    </div>
   </div>
 
   <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
@@ -116,6 +192,7 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
 <script>
 /* =================== Utils =================== */
 const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
+const fmtNum = n => isFinite(n) ? Number(n).toLocaleString() : '–';
 const fmtUpdated = iso => {
   try{
     const d = new Date(iso);
@@ -126,6 +203,9 @@ const fmtUpdated = iso => {
 };
 const hoursOf = s => {
   s=String(s||'').toLowerCase();
+  if (s.includes('year')) return 24*365;
+  if (s.includes('6 month')) return 24*30*6;
+  if (s.includes('3 month')) return 24*30*3;
   if (s.includes('month')) return 24*30;
   if (s.includes('week'))  return 24*7;
   if (s.includes('day'))   return 24;
@@ -148,6 +228,7 @@ const inCategory = (name, cat) => {
 
 /* =================== Data =================== */
 let dash={}, full={}, scores=[];
+let selectedProvider = null;
 
 async function loadJSON(url){ try{ const r=await fetch(url); if(!r.ok) throw 0; return await r.json(); }catch{ return {}; } }
 async function loadCSV(url){
@@ -205,106 +286,168 @@ function currentIndex(){
 }
 function renderIndex(){ document.getElementById('indexVal').textContent = fmtMoney(currentIndex()); }
 
-/* =================== Provider dropdown + pricing =================== */
-function refreshProviderDropdown(){
+/* =================== Provider Grid =================== */
+function getProvidersForFilter(){
   const region = document.getElementById('region').value;
-  const cat    = document.getElementById('category').value;
-  const sel    = document.getElementById('provSelect');
-
-  // distinct provider list for current slice
-  const seen = new Set(), list=[];
+  const cat = document.getElementById('category').value;
+  
+  const providerMap = new Map();
+  
   scores.forEach(r=>{
-    const prov = r.provider||''; const reg=r.region||'';
+    const prov = r.provider||'';
+    const reg = r.region||'';
     if (!prov) return;
     if (region!=='US (All)' && reg!==region) return;
     if (!inCategory(prov, cat)) return;
-    if (!seen.has(prov)){ seen.add(prov); list.push(prov); }
+    
+    const price = r.effective_price_usd_per_gpu_hr;
+    if (!isFinite(price)) return;
+    
+    if (!providerMap.has(prov)) {
+      providerMap.set(prov, {name: prov, prices: [], regions: new Set(), types: new Set()});
+    }
+    const entry = providerMap.get(prov);
+    entry.prices.push(price);
+    entry.regions.add(reg);
+    entry.types.add(r.type||'');
   });
-  list.sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML = ['<option value="" disabled selected>Select provider</option>']
-                  .concat(list.map(p=>`<option>${p}</option>`)).join('');
-
-  document.getElementById('calcSliceBadge').textContent = `${region} • ${cat}`;
-  document.getElementById('price').value = '';
-  document.getElementById('calcSummary').textContent = 'Select a provider to estimate cost.';
+  
+  const providers = Array.from(providerMap.values()).map(p => {
+    const sorted = p.prices.sort((a,b)=>a-b);
+    return {
+      name: p.name,
+      medianPrice: sorted[Math.floor(sorted.length/2)],
+      minPrice: sorted[0],
+      maxPrice: sorted[sorted.length-1],
+      count: sorted.length,
+      regions: Array.from(p.regions).join(', ')
+    };
+  });
+  
+  return providers.sort((a,b) => a.medianPrice - b.medianPrice);
 }
 
-function medianPriceForProvider(prov, region){
-  // Prefer region + on-demand + 1h → then relax progressively
-  let rows = scores.filter(r => (r.provider||'').toLowerCase()===prov.toLowerCase());
-  if (!rows.length) return NaN;
-
-  const byRegion = region==='US (All)' ? rows : rows.filter(r=>r.region===region);
-  rows = byRegion.length ? byRegion : rows;
-
-  let pref = rows.filter(r=>String(r.type||'').toLowerCase().includes('on') && /(^1 ?h)|(^1 ?hour)/i.test(r.duration||''));
-  if (!pref.length) pref = rows.filter(r=>String(r.type||'').toLowerCase().includes('on'));
-  const pool = pref.length ? pref : rows;
-
-  const prices = pool.map(r=>r.effective_price_usd_per_gpu_hr).filter(Number.isFinite).sort((a,b)=>a-b);
-  if (!prices.length) return NaN;
-  return prices[Math.floor(prices.length/2)];
-}
-
-function onProviderChange(){
-  const prov = document.getElementById('provSelect').value;
-  if (!prov) return;
+function renderProviderGrid(){
+  const providers = getProvidersForFilter();
+  const grid = document.getElementById('providerGrid');
   const region = document.getElementById('region').value;
-  const p = medianPriceForProvider(prov, region);
-  document.getElementById('price').value = isFinite(p) ? p.toFixed(2) : '';
-  calcCost(); // live update
+  const cat = document.getElementById('category').value;
+  
+  document.getElementById('comparisonBadge').textContent = `${region} • ${cat}`;
+  
+  if (!providers.length) {
+    grid.innerHTML = '<div class="small" style="grid-column:1/-1;text-align:center;padding:20px">No providers found for this filter</div>';
+    return;
+  }
+  
+  grid.innerHTML = providers.map(p => `
+    <div class="provider-card ${selectedProvider && selectedProvider.name === p.name ? 'selected' : ''}" 
+         onclick="selectProvider(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+      <div class="provider-name">${p.name}</div>
+      <div class="provider-price">${fmtMoney(p.medianPrice)}</div>
+      <div class="provider-details">
+        ${p.count} config${p.count > 1 ? 's' : ''} • ${fmtMoney(p.minPrice)}–${fmtMoney(p.maxPrice)}
+      </div>
+    </div>
+  `).join('');
 }
+
+function selectProvider(provider){
+  selectedProvider = provider;
+  document.getElementById('selectedProvider').value = provider.name;
+  renderProviderGrid();
+  calculateAll();
+}
+
+window.selectProvider = selectProvider;
 
 /* =================== Calculators =================== */
-function calcCost(){
-  const prov  = document.getElementById('provSelect').value;
-  const price = Number(document.getElementById('price').value)||0;
-  const count = Number(document.getElementById('count').value)||0;
-  const dur   = document.getElementById('duration').value;
-  const hrs   = hoursOf(dur);
-  if (!prov || !(price>0)){ document.getElementById('calcSummary').textContent='Select a provider (price auto-filled)'; return; }
-  const total = price * count * hrs;
-  document.getElementById('calcSummary').textContent =
-    `Total cost: ${fmtMoney(total)} — ${prov} • ${count} GPU × ${dur} × ${fmtMoney(price).replace('$','$/')}/hr`;
+function calculateAll(){
+  if (!selectedProvider) {
+    document.getElementById('costPrice').textContent = '–';
+    document.getElementById('costHours').textContent = '–';
+    document.getElementById('costGPUHours').textContent = '–';
+    document.getElementById('costTotal').textContent = '–';
+    document.getElementById('roiCost').textContent = '–';
+    document.getElementById('roiRevenue').textContent = '–';
+    document.getElementById('roiProfit').textContent = '–';
+    document.getElementById('roiMargin').textContent = '–';
+    document.getElementById('roiValue').textContent = '–';
+    document.getElementById('roiBreakeven').textContent = '';
+    return;
+  }
+
+  const price = selectedProvider.medianPrice;
+  const count = Number(document.getElementById('count').value) || 0;
+  const dur = document.getElementById('duration').value;
+  const hrs = hoursOf(dur);
+  const gpuHours = count * hrs;
+  const totalCost = price * gpuHours;
+
+  // Cost display
+  document.getElementById('costPrice').textContent = fmtMoney(price) + '/hr';
+  document.getElementById('costHours').textContent = fmtNum(hrs) + ' hrs';
+  document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
+  document.getElementById('costTotal').textContent = fmtMoney(totalCost);
+
+  // ROI calculation
+  const revenue = Number(document.getElementById('revenue').value) || 0;
+  const utilPct = Number(document.getElementById('util').value) || 0;
+  const util = utilPct / 100;
+
+  const totalRevenue = revenue * util * gpuHours;
+  const profit = totalRevenue - totalCost;
+  const margin = totalCost > 0 ? (profit / totalRevenue) * 100 : 0;
+  const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+
+  document.getElementById('roiCost').textContent = fmtMoney(totalCost);
+  document.getElementById('roiRevenue').textContent = fmtMoney(totalRevenue);
+  
+  const profitEl = document.getElementById('roiProfit');
+  profitEl.textContent = fmtMoney(profit);
+  profitEl.className = 'metric-value ' + (profit >= 0 ? 'positive' : 'negative');
+  
+  const marginEl = document.getElementById('roiMargin');
+  marginEl.textContent = isFinite(margin) ? margin.toFixed(1) + '%' : '–';
+  marginEl.className = 'metric-value ' + (margin >= 0 ? 'positive' : 'negative');
+  
+  const roiEl = document.getElementById('roiValue');
+  roiEl.textContent = isFinite(roi) ? roi.toFixed(1) + '%' : '–';
+  roiEl.className = 'result-value ' + (roi >= 0 ? 'positive' : 'negative');
+
+  // Breakeven analysis
+  if (revenue > 0 && profit < 0) {
+    const breakevenUtil = (price / revenue) * 100;
+    document.getElementById('roiBreakeven').textContent = 
+      `Need ${breakevenUtil.toFixed(1)}% utilization to break even`;
+  } else if (profit >= 0) {
+    document.getElementById('roiBreakeven').textContent = 
+      `Profitable at current utilization`;
+  } else {
+    document.getElementById('roiBreakeven').textContent = '';
+  }
 }
 
-function calcROI(){
-  // ROI model: revenue vs cost, using current provider price, user revenue & utilisation
-  const price = Number(document.getElementById('price').value)||0;      // $/GPU-hr (from provider)
-  const rev   = Number(document.getElementById('revenue').value)||0;    // $/GPU-hr
-  const util  = Number(document.getElementById('util').value)||0;       // 0–1
-  const count = Number(document.getElementById('count').value)||0;
-  const hrs   = hoursOf(document.getElementById('duration').value);
-
-  const out   = document.getElementById('roiOut');
-  if (!(price>0) || !(rev>0) || !(util>=0)){ out.textContent='ROI: select provider and enter revenue/utilisation'; return; }
-
-  const cost    = price * count * hrs;
-  const revenue = rev   * util  * count * hrs;
-  const roiPct  = cost>0 ? ((revenue - cost)/cost)*100 : NaN;
-
-  out.textContent = `ROI: ${isFinite(roiPct)?roiPct.toFixed(1)+'%':'–'}  ·  Revenue ${fmtMoney(revenue)}  ·  Cost ${fmtMoney(cost)}`;
+/* =================== Event Listeners =================== */
+function setupListeners(){
+  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); renderProviderGrid(); });
+  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); renderProviderGrid(); });
+  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); renderProviderGrid(); });
+  
+  document.getElementById('count').addEventListener('input', calculateAll);
+  document.getElementById('duration').addEventListener('change', calculateAll);
+  document.getElementById('revenue').addEventListener('input', calculateAll);
+  document.getElementById('util').addEventListener('input', calculateAll);
 }
 
 /* =================== Boot =================== */
 async function boot(){
   await loadAll();
   renderIndex();
-  refreshProviderDropdown();
-
-  // filters
-  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); refreshProviderDropdown(); });
-  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); refreshProviderDropdown(); });
-  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); refreshProviderDropdown(); });
-
-  // calculators
-  document.getElementById('provSelect').addEventListener('change', onProviderChange);
-  document.getElementById('btnCost').addEventListener('click', calcCost);
-  document.getElementById('btnROI').addEventListener('click', calcROI);
+  renderProviderGrid();
+  setupListeners();
 }
 boot();
 </script>
 </body>
 </html>
-
-
