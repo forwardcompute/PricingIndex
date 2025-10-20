@@ -109,13 +109,13 @@ def construct_regional_order_books(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
         order_book = (region_data
                      .groupby('price_hourly_usd')
                      .agg({
-                         'gpu_count': 'sum',  # Sum all GPUs at this price
-                         'provider': 'count'  # Count providers (for reference)
+                         'gpu_count': 'sum',  
+                         'provider': 'count'  
                      })
                      .reset_index()
                      .rename(columns={
                          'price_hourly_usd': 'price',
-                         'gpu_count': 'q',  # Using ORNN notation
+                         'gpu_count': 'q',  
                          'provider': 'num_providers'
                      }))
         
@@ -583,6 +583,25 @@ def save_hcpi_results(result: Dict, prefix: str = "hcpi"):
     
     return full_filename, summary_filename
 
+def export_dashboard_json(result: Dict, out_path: str = "hcpi/hcpi_dashboard.json"):
+    """
+    Export a compact dashboard JSON with US, regional, and category indices.
+    """
+    dash = {
+        "timestamp": result.get("metadata", {}).get("timestamp"),
+        "us_index": result.get("us_index"),
+        "regions": result.get("regional_indices", {}),
+        "categories": {},
+    }
+    cats = result.get("category_indices", {})
+    for cat, info in cats.items():
+        dash["categories"][cat] = info.get("category_index")
+    import os, json
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    with open(out_path, "w") as f:
+        json.dump(dash, f, indent=2)
+    print(f"✓ Exported dashboard JSON → {out_path}")
+    return out_path
 
 # Example usage
 if __name__ == "__main__":
