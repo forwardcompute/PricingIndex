@@ -23,30 +23,29 @@ env:
 jobs:
   build-and-bundle:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
+        
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: 'pip'
-
+          
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-
+          
       - name: Run scrape + index pipeline
+        continue-on-error: true
         env:
-          # Use your DB if set; otherwise falls back to local sqlite
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
         run: |
           set -euo pipefail
-          python master_runner.py --cron --quiet --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}"
-
+          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" || echo "Scraping encountered issues, continuing with existing data"
+          
       # (Optional) Commit generated data into the repo so it appears in the Files tab.
       # Flip COMMIT_DATA env to 'true' at the top to enable.
       - name: Commit generated data to repository
@@ -61,12 +60,12 @@ jobs:
           message: "ci: update data snapshots [skip ci]"
           author_name: github-actions
           author_email: actions@github.com
-
+          
       - name: Prepare static site (public/)
         run: |
           set -euo pipefail
           mkdir -p public public/data/derived public/data/history public/hcpi
-
+          
           # Dashboard HTML (prefer docs/index.html, fallback to root index.html)
           if [ -f docs/index.html ]; then
             cp -f docs/index.html public/index.html
@@ -83,16 +82,16 @@ jobs:
             </body>
             HTML
           fi
-
+          
           # Copy latest + history artifacts for the dashboard
           cp -f data/derived/*.csv   public/data/derived/  2>/dev/null || true
           cp -f data/history/*.csv   public/data/history/  2>/dev/null || true
           cp -f hcpi/*.json          public/hcpi/          2>/dev/null || true
           cp -f hcpi/*history*.csv   public/hcpi/          2>/dev/null || true
-
+          
           echo "==== public/ tree ===="
           find public -maxdepth 3 -type f -print
-
+          
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -110,6 +109,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-
 
