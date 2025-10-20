@@ -5,463 +5,97 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Forward Compute Index</title>
 <link rel="icon" href="data:,">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 <style>
-  :root{
-    --bg:#0b0e13; --panel:#121720; --muted:#1c2330; --text:#eaf1f7; --sub:#9fb0c3;
-    --accent:#7bd7ff; --ok:#27d980; --warn:#ffd166; --danger:#ff6b6b;
-    --chip:#1a2130; --chipStroke:#2b3143; --chipText:#cfd9e5;
-    --row:#0f141c; --rowAlt:#111824; --badge:#283042;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif}
-  a{color:var(--accent);text-decoration:none}
-  .wrap{max-width:1120px;margin:28px auto;padding:0 18px}
-  header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-  header h1{font-size:28px;margin:0;font-weight:800;letter-spacing:.2px}
-  .updated{margin-left:auto;font-size:12px;color:var(--sub);background:var(--panel);border:1px solid var(--chipStroke);padding:6px 10px;border-radius:10px}
-  .row{display:grid;gap:12px}
-  .heroGrid{grid-template-columns:1fr 1fr 1fr 1fr 110px}
-  .tileRow{grid-template-columns:1fr 1fr 1fr 1fr}
-  @media (max-width:980px){ .heroGrid{grid-template-columns:1fr 1fr} .tileRow{grid-template-columns:1fr 1fr}}
-  .card{background:var(--panel);border:1px solid var(--muted);border-radius:14px;padding:12px}
-  .select, .btn, .inp{width:100%;appearance:none;background:var(--chip);border:1px solid var(--chipStroke);color:var(--text);padding:10px 12px;border-radius:10px}
-  .select{padding-right:36px;background-image:linear-gradient(45deg,transparent 50%,var(--sub) 50%),linear-gradient(135deg,var(--sub) 50%,transparent 50%),linear-gradient(to right,transparent,transparent);
-          background-position:calc(100% - 18px) 16px,calc(100% - 12px) 16px,100% 0;background-size:6px 6px,6px 6px,2.5em 2.5em;background-repeat:no-repeat}
-  .btn{cursor:pointer}
-  .btn.clear{background:#1d2430;border-color:#2a3244}
-  .stat{display:flex;flex-direction:column;gap:6px}
-  .stat h4{margin:0;color:var(--sub);font-weight:600}
-  .stat .val{font-size:28px;font-weight:800}
-  .stat .sub{color:var(--sub);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .small{font-size:12px;color:var(--sub)}
-  .bigPrice{font-size:64px;font-weight:900;letter-spacing:.5px}
-  .liveDot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--ok);margin-right:6px;position:relative;top:-1px}
-  .heroBox{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:center}
-  .heroMeta{color:var(--sub);text-align:center}
-  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .control{display:flex;flex-direction:column;gap:6px;min-width:180px}
-  .control label{font-size:11px;color:var(--sub);padding-left:2px}
-  table{width:100%;border-collapse:separate;border-spacing:0 8px}
-  thead th{color:var(--sub);font-weight:600;text-align:left;font-size:12px;padding:0 10px 6px}
-  tbody tr{background:var(--row);border:1px solid var(--muted)}
-  tbody tr:nth-child(even){background:var(--rowAlt)}
-  td{padding:12px 10px;vertical-align:middle}
-  td .pill{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border:1px solid var(--chipStroke);padding:2px 8px;border-radius:999px;font-size:12px;color:var(--chipText)}
-  .right{justify-self:end;text-align:right}
-  .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:var(--badge);color:var(--sub);font-size:12px;border:1px solid var(--chipStroke)}
-  .badge.best{background:rgba(39,217,128,0.12); color:#9ff3c8; border-color:rgba(39,217,128,0.25)}
-  .barWrap{margin-top:6px;height:6px;background:rgba(255,255,255,0.05);border:1px solid var(--chipStroke);border-radius:999px;overflow:hidden}
-  .bar{height:100%}
+:root{--bg:#0f1216;--panel:#171b21;--muted:#202532;--text:#e7edf3;--sub:#9fb0c3;--accent:#7bd7ff;--ok:#27d980;}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:2rem;}
+h1{margin:0 0 .3rem;font-size:2rem;} select,input,button{background:var(--muted);color:var(--text);
+border:1px solid #2c3240;border-radius:6px;padding:.4rem .6rem;font:inherit;}
+button{cursor:pointer;background:var(--accent);color:#000;font-weight:600;}
+.card{background:var(--panel);padding:1rem 1.5rem;border-radius:12px;margin-top:1.2rem;}
+.flex{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;}
+.big{font-size:4rem;font-weight:700;color:var(--accent);}
+.sub{color:var(--sub);}
+footer{margin-top:2rem;color:var(--sub);font-size:.9rem;}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <h1>Forward Compute Index</h1>
-    <span class="small">Auto-generated from <code>data/derived/</code> &amp; <code>hcpi/</code></span>
-    <div class="updated" id="asOf">Updated: —</div>
-  </header>
+<h1>Forward Compute Index</h1>
+<p class="sub">Real-time regional and category GPU pricing benchmark</p>
 
-  <!-- HCPI HERO -->
-  <div class="card">
-    <div class="controls" style="margin-bottom:10px">
-      <div class="control"><label>Region</label><select id="idx_region" class="select"></select></div>
-      <div class="control"><label>Provider category</label><select id="idx_cat" class="select"></select></div>
-      <div class="control"><label>&nbsp;</label><button id="idx_reset" class="btn clear">Reset</button></div>
-    </div>
-    <div class="heroBox">
-      <div style="text-align:center">
-        <div class="bigPrice" id="idx_big">–</div>
-        <div class="heroMeta"><span class="liveDot"></span>Live</div>
-      </div>
-      <div class="heroMeta" id="idx_meta">—</div>
-    </div>
-    <div class="card" style="margin-top:12px">
-      <canvas id="idx_chart" height="100"></canvas>
-    </div>
-  </div>
-
-  <!-- KPI TILES -->
-  <div class="row tileRow" style="margin-top:12px">
-    <div class="card stat">
-      <h4>Cheapest / GPU-hr</h4>
-      <div class="val" id="kpi_low">–</div>
-      <div class="sub" id="kpi_low_sub"> </div>
-    </div>
-    <div class="card stat">
-      <h4>Median / GPU-hr</h4>
-      <div class="val" id="kpi_med">–</div>
-      <div class="sub" id="kpi_med_sub"> </div>
-    </div>
-    <div class="card stat">
-      <h4>Providers covered</h4>
-      <div class="val" id="kpi_prov">–</div>
-      <div class="sub" id="kpi_prov_sub">Unique provider names in current filter.</div>
-    </div>
-    <div class="card stat">
-      <h4>Entries</h4>
-      <div class="val" id="kpi_rows">0</div>
-      <div class="sub">Rows displayed in leaderboard.</div>
-    </div>
-  </div>
-
-  <!-- LEADERBOARD FILTERS -->
-  <div class="row heroGrid" style="margin-top:12px">
-    <div class="control"><label>GPU</label><select id="f_gpu" class="select"></select></div>
-    <div class="control"><label>Region</label><select id="f_region" class="select"></select></div>
-    <div class="control"><label>Type</label><select id="f_type" class="select"></select></div>
-    <div class="control"><label>Duration</label><select id="f_duration" class="select"></select></div>
-    <div class="control"><label>GPU Count</label><select id="f_count" class="select"></select></div>
-    <div class="control"><label>&nbsp;</label><button class="btn clear" id="btnClear">Clear</button></div>
-  </div>
-
-  <!-- LEADERBOARD -->
-  <div class="card" style="margin-top:12px">
-    <div class="small" id="lbSort">Leaderboard</div>
-    <table id="tbl_leader">
-      <thead>
-        <tr>
-          <th>Provider</th><th>Region</th><th>GPU</th><th>Type</th>
-          <th>Duration</th><th>Count</th>
-          <th class="right">$/GPU-hr</th><th class="right">Score</th><th class="right">Timestamp</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- TOTAL COST CALCULATOR -->
-  <div class="card" style="margin-top:14px">
-    <div class="controls">
-      <div class="control"><label>Price ($/GPU-hr)</label><input id="tc_price" class="inp" type="number" step="0.01" placeholder="e.g. 3.25"></div>
-      <div class="control"><label>GPU count</label><input id="tc_count" class="inp" type="number" step="1" value="8"></div>
-      <div class="control"><label>Duration</label>
-        <select id="tc_dur" class="select"><option>1 hour</option><option>1 day</option><option>1 week</option><option>1 month</option></select>
-      </div>
-      <div class="control"><label>&nbsp;</label><button id="tc_run" class="btn">Calculate</button></div>
-    </div>
-    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:10px">
-      <div class="card stat" style="flex:1"><h4>Total cost</h4><div class="val" id="tc_total">–</div><div class="sub">count × hours × price</div></div>
-      <div class="card stat" style="flex:1"><h4>$/GPU-hr used</h4><div class="val" id="tc_eff">–</div><div class="sub">from price input</div></div>
-    </div>
-  </div>
-
-  <!-- ROI (Rock Solid) -->
-  <div class="card" style="margin-top:14px">
-    <h3 style="margin:4px 0 10px">ROI (rock solid)</h3>
-    <div class="controls">
-      <div class="control"><label>Region</label><select id="roi_region" class="select"></select></div>
-      <div class="control"><label>Type</label><select id="roi_type" class="select"></select></div>
-      <div class="control"><label>GPU</label><select id="roi_gpu" class="select"></select></div>
-      <div class="control"><label>Revenue / GPU-hr ($)</label><input id="roi_revenue" class="inp" type="number" step="0.01" placeholder="e.g. 4.25"></div>
-      <div class="control"><label>Utilization (0–1)</label><input id="roi_util" class="inp" type="number" step="0.01" value="0.7"></div>
-      <div class="control"><label>GPUs</label><input id="roi_count" class="inp" type="number" step="1" value="8"></div>
-      <div class="control"><label>Horizon</label>
-        <select id="roi_dur" class="select"><option>1 day</option><option selected>1 week</option><option>1 month</option></select>
-      </div>
-      <div class="control"><label>&nbsp;</label><button id="roi_run" class="btn">Estimate ROI</button></div>
-    </div>
-    <div style="overflow:auto;margin-top:10px">
-      <table style="width:100%">
-        <thead><tr><th>Scenario</th><th class="right">Price $/GPU-hr</th><th class="right">Revenue</th><th class="right">Cost</th><th class="right">ROI</th></tr></thead>
-        <tbody id="roi_body"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <p class="small" style="margin:18px 4px 40px">
-    Data sources: <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code>. Serve this file over HTTP (e.g. <code>python -m http.server</code>) or via GitHub Pages.
-  </p>
+<div class="flex">
+  <label>Region</label>
+  <select id="region">
+    <option>US-East</option><option>US-Central</option><option>US-West</option><option>US (All)</option>
+  </select>
+  <label>Category</label>
+  <select id="category">
+    <option>All</option>
+    <option>Big 3 Hyperscalers</option>
+    <option>Major GPU Clouds</option>
+    <option>Serverless</option>
+    <option>Specialized</option>
+  </select>
+  <button onclick="update()">Update</button>
 </div>
 
+<div class="card" style="text-align:center">
+  <div class="big" id="indexValue">–</div>
+  <div style="color:var(--ok);margin-top:.2rem">● Live</div>
+  <div class="sub" id="updated">Updated: –</div>
+</div>
+
+<div class="card">
+  <h2>Total Cost Calculator</h2>
+  <div class="flex">
+    <input id="price" type="number" step="0.01" placeholder="Price $/GPU-hr">
+    <input id="count" type="number" step="1" value="8" placeholder="GPU count">
+    <input id="hours" type="number" step="0.5" value="1" placeholder="Hours">
+    <button onclick="calcCost()">Calculate</button>
+  </div>
+  <p id="costResult" class="sub">Total cost: –</p>
+</div>
+
+<div class="card">
+  <h2>ROI Estimator</h2>
+  <div class="flex">
+    <input id="revenue" type="number" step="0.01" placeholder="Revenue $/GPU-hr">
+    <input id="util" type="number" step="0.01" value="0.7" placeholder="Utilisation 0–1">
+    <button onclick="calcROI()">Estimate ROI</button>
+  </div>
+  <p id="roiResult" class="sub">ROI: –</p>
+</div>
+
+<footer>Data source: <code>hcpi/hcpi_dashboard.json</code></footer>
+
 <script>
-window.addEventListener('DOMContentLoaded', () => {
-(function(){
-  const fmt = {
-    money:n=> n==null||isNaN(n) ? '–' : `$${Number(n).toFixed(2)}`,
-    money0:n=> n==null||isNaN(n) ? '–' : `$${Number(n).toFixed(0)}`,
-    num:n  => n==null||isNaN(n) ? '–' : Number(n).toLocaleString(),
-    date:s => s? String(s).replace('T',' ').replace('Z',''): '–'
-  };
-  const DER_BASES = ["data/derived/","./data/derived/","../data/derived/","/data/derived/"];
-  const HCPI_BASES= ["hcpi/","./hcpi/","../hcpi/","/hcpi/"];
-  const uniq = a => [...new Set(a)];
-  const byNumAsc = k => (a,b)=>(+a[k]||1e12)-(+b[k]||1e12);
-  function durToHours(s){ const v=String(s||"").toLowerCase(); if(/month/.test(v))return 24*30;if(/week/.test(v))return 24*7;if(/day/.test(v))return 24;return 1;}
-  function numify(x){ return x==null ? NaN : Number(String(x).replace(/[^\d.\-]/g,"")); }
-  function parseCSV(txt){
-    const lines = txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
-    if (!lines.length) return [];
-    const header = lines.shift().split(",").map(h=>h.trim());
-    return lines.filter(Boolean).map(line=>{
-      const cells = line.split(",").map(s=>s.trim());
-      const o={}; header.forEach((h,i)=>o[h]=cells[i]??"");
-      return o;
-    });
-  }
-  async function tryFetch(url){
-    const bust = (url.includes('?') ? '&' : '?') + 'v=' + Date.now();
-    const r = await fetch(url + bust,{cache:"no-store"});
-    if(!r.ok) throw new Error(r.status+" "+url);
-    return r;
-  }
-  async function getDerived(file){
-    for(const b of DER_BASES){ try{ const r=await tryFetch(b+file); return r; }catch(e){} }
-    throw new Error("Missing "+file);
-  }
-  async function getHCPI(file){
-    for(const b of HCPI_BASES){ try{ const r=await tryFetch(b+file); return r; }catch(e){} }
-    throw new Error("Missing "+file);
-  }
-
-  const PROVIDER_CATEGORY = (name)=>{
-    const n=String(name||"").toLowerCase();
-    if (/(amazon|aws|azure|microsoft|google|gcp)/.test(n)) return "Hyperscaler";
-    return "Independent";
-  };
-
-  const state = { scores:[], idx:null, filters:{gpu:"All", region:"All", type:"All", duration:"All", count:"All"} };
-
-  function normalizeGPU(m){
-    const s=String(m||"").toUpperCase();
-    if (s.startsWith("H100")) return "H100";
-    return s || "Unknown";
-  }
-
-  async function loadAll(){
-    try{
-      const txt = await (await getDerived("provider_scores_latest.csv")).text();
-      state.scores = parseCSV(txt).map(r=>({
-        provider:r.provider,
-        provider_cat: r.provider_type || PROVIDER_CATEGORY(r.provider),
-        region:r.region,
-        gpu: normalizeGPU(r.gpu_model),
-        type:r.type,
-        duration:r.duration,
-        count: r.gpu_count ? Number(r.gpu_count) : null,
-        price: numify(r.effective_price_usd_per_gpu_hr),
-        score: r.priceiq_score ? Number(r.priceiq_score) : null,
-        ts: r.timestamp
-      })).filter(r=>isFinite(r.price));
-    }catch(e){ console.warn("scores missing", e); }
-
-    try{
-      state.idx = await (await getHCPI("hcpi_latest_full.json")).json();
-    }catch(e){ console.warn("hcpi missing", e); }
-
-    initIndexHero();
-    initFilters();
-    hydrateAll();
-    initCalculator();
-    initROI();
-  }
-
-  function setOptions(el, arr, withAll=true){
-    if (!el) return;
-    const vals = withAll ? ["All", ...arr] : arr;
-    el.innerHTML = vals.map(v=>`<option>${v}</option>`).join("");
-  }
-
-  function initFilters(){
-    const rows = state.scores;
-    const gpus = uniq(rows.map(r=>r.gpu)).sort();
-    const regs = uniq(rows.map(r=>r.region)).sort();
-    const types= uniq(rows.map(r=>r.type)).sort();
-    const durs = uniq(rows.map(r=>r.duration)).sort();
-    const cnts = uniq(rows.map(r=>r.count).filter(Boolean)).sort((a,b)=>a-b);
-
-    const gpuSel=document.getElementById("f_gpu");
-    const regSel=document.getElementById("f_region");
-    const typSel=document.getElementById("f_type");
-    const durSel=document.getElementById("f_duration");
-    const cntSel=document.getElementById("f_count");
-
-    setOptions(gpuSel,gpus);
-    setOptions(regSel,regs);
-    setOptions(typSel,types);
-    setOptions(durSel,durs);
-    setOptions(cntSel,cnts);
-
-    if (gpuSel) gpuSel.value = gpus.includes("H100") ? "H100" : (gpus[0]||"All");
-    if (typSel) typSel.value = "All";
-    ["gpu","region","type","duration","count"].forEach((k,i)=>{
-      const el=[gpuSel,regSel,typSel,durSel,cntSel][i];
-      if (!el) return;
-      el.addEventListener("change", ()=>{ state.filters[k]=el.value; hydrateAll(); });
-    });
-
-    const times = state.scores.map(r=>r.ts).filter(Boolean).sort();
-    const latest = times.pop() || new Date().toISOString();
-    const asOfEl = document.getElementById("asOf");
-    if (asOfEl) asOfEl.textContent = "Updated: " + fmt.date(latest);
-  }
-
-  function applyFilters(rows){
-    const f=state.filters;
-    return rows.filter(r=>
-      (f.gpu==="All"||r.gpu===f.gpu) &&
-      (f.region==="All"||r.region===f.region) &&
-      (f.type==="All"||r.type===f.type) &&
-      (f.duration==="All"||r.duration===f.duration) &&
-      (f.count==="All"|| String(r.count)===String(f.count))
-    );
-  }
-
-  function hydrateAll(){
-    const rows=applyFilters(state.scores).sort(byNumAsc("price"));
-    const kpiRows = document.getElementById("kpi_rows"); if (kpiRows) kpiRows.textContent = rows.length;
-
-    if(rows.length){
-      const lo=rows[0];
-      const set = (id,txt)=>{ const el=document.getElementById(id); if(el) el.textContent=txt; };
-      set("kpi_low", fmt.money(lo.price));
-      set("kpi_low_sub", `${lo.provider} · ${lo.region} · ${lo.gpu} (${lo.type||""})`);
-      const prices=rows.map(r=>r.price).filter(isFinite).sort((a,b)=>a-b);
-      const mid=prices[Math.floor(prices.length/2)];
-      set("kpi_med", fmt.money(mid));
-      set("kpi_med_sub", `${rows.length} quotes`);
-      set("kpi_prov", uniq(rows.map(r=>r.provider)).length);
-    }else{
-      ["kpi_low","kpi_med","kpi_prov"].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent="–"; });
-      ["kpi_low_sub","kpi_med_sub"].forEach(id=>{ const el=document.getElementById(id); if(el) el.textContent=""; });
-    }
-
-    const lbBody = document.querySelector("#tbl_leader tbody");
-    if (lbBody){
-      lbBody.innerHTML = rows.map(r=>`
-        <tr>
-          <td>${r.provider}</td><td>${r.region}</td><td>${r.gpu}</td>
-          <td><span class="pill">${r.type||"–"}</span></td>
-          <td>${r.duration||"–"}</td>
-          <td>${r.count!=null? r.count : "–"}</td>
-          <td class="right">${fmt.money(r.price)}</td>
-          <td class="right">${r.score!=null? Number(r.score).toFixed(1):"–"}</td>
-          <td class="right">${fmt.date(r.ts)}</td>
-        </tr>`).join("");
-    }
-  }
-
-  function initIndexHero(){
-    if (!state.idx) { document.getElementById("idx_meta").textContent="No hcpi_latest_full.json found"; return; }
-    const regions = ["US","EU","APAC","Global"].filter(r=>state.idx.history?.regions?.[r] || r==="US");
-    const catSet = new Set(["All","Hyperscaler","Independent"]);
-    const selR = document.getElementById("idx_region");
-    const selC = document.getElementById("idx_cat");
-    selR.innerHTML = regions.map(r=>`<option>${r}</option>`).join("");
-    selC.innerHTML = [...catSet].map(c=>`<option>${c}</option>`).join("");
-    selR.value = regions.includes("US") ? "US" : regions[0];
-    selC.value = "All";
-    const reset = document.getElementById("idx_reset");
-    const run = ()=> renderIndexHero(selR.value, selC.value);
-    [selR, selC].forEach(el=> el.addEventListener("change", run));
-    reset && reset.addEventListener("click", ()=>{ selR.value=regions.includes("US")?"US":regions[0]; selC.value="All"; run(); });
-    run();
-  }
-
-  function pickSeries(region, category){
-    const h = state.idx.history || {};
-    if (region==="Global" && h.global) return h.global;
-    if (h.regions && h.regions[region]) return h.regions[region];
-    return h.us || [];
-  }
-
-  function renderIndexHero(region, category){
-    const series = pickSeries(region, category);
-    if (!Array.isArray(series) || !series.length){
-      document.getElementById("idx_big").textContent = "–";
-      document.getElementById("idx_meta").textContent = `No data for ${region}`;
-      return;
-    }
-    const last = series[series.length-1];
-    const price = Number(last.value || last.price || last.p50 || NaN);
-    document.getElementById("idx_big").textContent = isFinite(price) ? `$${price.toFixed(2)}` : "–";
-    const ts = last.ts || last.timestamp || last.date || "";
-    const prov = state.idx.meta?.providers || state.idx.meta?.n_providers || "";
-    const share = state.idx.meta?.on_demand_share ? Math.round(state.idx.meta.on_demand_share*100) : null;
-    document.getElementById("idx_meta").innerHTML =
-      `Updated: ${fmt.date(ts)} · ${prov? prov+" providers · ":""}${share!=null? "~"+share+"% on-demand market":""} · Showing ${region} index`;
-    const labels = series.map(r=> (r.ts||r.timestamp||"").slice(0,16).replace('T',' '));
-    const values = series.map(r=> Number(r.value||r.price||r.p50||NaN)).filter(x=>isFinite(x));
-    const canvas = document.getElementById("idx_chart");
-    if (!window.Chart || !canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (window._idxChart) window._idxChart.destroy();
-    window._idxChart = new Chart(ctx,{
-      type:'line',
-      data:{ labels, datasets:[{label:`${region} Index`, data:values, tension:0.25, pointRadius:0, borderWidth:2, fill:true}]},
-      options:{ responsive:true, plugins:{ legend:{display:false}},
-        scales:{ y:{ ticks:{ callback:v=>"$"+Number(v).toFixed(2)}}, x:{ ticks:{ autoSkip:true, maxRotation:0 }}}}
-    });
-  }
-
-  function initCalculator(){
-    const priceEl = document.getElementById("tc_price");
-    const cntEl = document.getElementById("tc_count");
-    const durEl = document.getElementById("tc_dur");
-    function run(){
-      const p = Number(priceEl.value||NaN);
-      const c = Number(cntEl.value||NaN);
-      const h = durToHours(durEl.value);
-      const total = (isFinite(p)&&isFinite(c)) ? p*c*h : NaN;
-      document.getElementById("tc_total").textContent = fmt.money0(total);
-      document.getElementById("tc_eff").textContent = fmt.money(p);
-    }
-    document.getElementById("tc_run").onclick = run;
-    if (!priceEl.value){
-      const slice = state.scores.filter(r=> r.gpu==="H100" && /On-Demand/i.test(r.type||""));
-      if (slice.length){
-        const vals = slice.map(r=>r.price).sort((a,b)=>a-b);
-        const p50 = vals[Math.floor(vals.length/2)];
-        priceEl.value = Number(p50).toFixed(2);
-      }
-    }
-    run();
-  }
-
-  function initROI(){
-    const regSel=document.getElementById("roi_region");
-    const typSel=document.getElementById("roi_type");
-    const gpuSel=document.getElementById("roi_gpu");
-    const rows = state.scores;
-    setOptions(regSel, uniq(rows.map(r=>r.region)).sort());
-    setOptions(typSel, uniq(rows.map(r=>r.type)).sort());
-    setOptions(gpuSel, uniq(rows.map(r=>r.gpu)).sort());
-    gpuSel.value = "H100";
-    document.getElementById("roi_run").onclick = ()=>{
-      const region = regSel.value; const typ = typSel.value; const gpu = gpuSel.value;
-      const rev = Number(document.getElementById("roi_revenue").value||NaN);
-      const util= Number(document.getElementById("roi_util").value||NaN);
-      const cnt = Number(document.getElementById("roi_count").value||NaN);
-      const hrs = durToHours(document.getElementById("roi_dur").value);
-      const slice = rows.filter(r=> r.gpu===gpu && r.region===region && r.type===typ);
-      const vals = slice.map(r=>r.price).filter(isFinite).sort((a,b)=>a-b);
-      function q(p){ if(!vals.length) return NaN; const idx=(vals.length-1)*p, lo=Math.floor(idx), hi=Math.ceil(idx); if(lo===hi) return vals[lo]; const w=idx-lo; return vals[lo]*(1-w)+vals[hi]*w; }
-      const p10=q(0.10), p50=q(0.50), p90=q(0.90);
-      const scenarios=[["Conservative",p90],["Base",p50],["Optimistic",p10]];
-      const body=document.getElementById("roi_body");
-      const rowsHtml = scenarios.map(([name,price])=>{
-        const usedHrs = hrs*util;
-        const revenue = isFinite(rev)? rev*cnt*usedHrs : NaN;
-        const cost = isFinite(price)? price*cnt*hrs : NaN;
-        const roi = (isFinite(revenue)&&isFinite(cost)&&cost>0) ? (revenue-cost)/cost : NaN;
-        return `<tr>
-          <td>${name}</td>
-          <td class="right">${fmt.money(price)}</td>
-          <td class="right">${fmt.money0(revenue)}</td>
-          <td class="right">${fmt.money0(cost)}</td>
-          <td class="right">${isFinite(roi)? (roi*100).toFixed(1)+"%":"–"}</td>
-        </tr>`;
-      }).join("");
-      body.innerHTML = rowsHtml || `<tr><td colspan="5" class="small">No slice data for chosen filters.</td></tr>`;
-    };
-    document.getElementById("roi_run").click();
-  }
-
-  loadAll();
-})();
-});
+async function update(){
+  const regionSel=document.getElementById('region').value;
+  const catSel=document.getElementById('category').value;
+  const res=await fetch('hcpi/hcpi_dashboard.json');
+  const data=await res.json();
+  let val;
+  if(catSel!=='All'){val=data.categories[catSel]??null;}
+  else if(regionSel==='US (All)'){val=data.us_index;}
+  else{val=data.regions[regionSel]??null;}
+  const el=document.getElementById('indexValue');
+  if(!val){el.textContent='–';return;}
+  el.textContent=`$${val.toFixed(2)}`;
+  document.getElementById('updated').textContent='Updated: '+data.timestamp;
+}
+function calcCost(){
+  const p=parseFloat(price.value)||0,c=parseFloat(count.value)||0,h=parseFloat(hours.value)||0;
+  const t=p*c*h;
+  costResult.textContent=`Total cost: $${t.toFixed(2)} for ${c} GPU × ${h} hr × $${p}/hr`;
+}
+function calcROI(){
+  const p=parseFloat(price.value)||0,r=parseFloat(revenue.value)||0,u=parseFloat(util.value)||0;
+  if(!p||!r){roiResult.textContent='Enter price and revenue';return;}
+  const roi=((r*u-p)/p)*100;
+  roiResult.textContent=`ROI: ${roi.toFixed(1)} % at ${(u*100).toFixed(0)} % utilisation`;
+}
+update();
 </script>
 </body>
 </html>
+
 
