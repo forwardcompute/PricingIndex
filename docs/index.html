@@ -224,7 +224,7 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
     </div>
   </div>
 
-  <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
+  <footer>Data sources: <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
 
 <script>
 /* =================== Utils =================== */
@@ -267,10 +267,19 @@ const inCategory = (name, cat) => {
 let dash={}, full={}, scores=[];
 let selectedProvider = null;
 
-async function loadJSON(url){ try{ const r=await fetch(url); if(!r.ok) throw 0; return await r.json(); }catch{ return {}; } }
+async function loadJSON(url){ 
+  try{ 
+    const cacheBust = `${url}?t=${Date.now()}`;
+    const r=await fetch(cacheBust); 
+    if(!r.ok) throw 0; 
+    return await r.json(); 
+  }catch{ return {}; } 
+}
 async function loadCSV(url){
   try{
-    const r = await fetch(url); if(!r.ok) return [];
+    const cacheBust = `${url}?t=${Date.now()}`;
+    const r = await fetch(cacheBust); 
+    if(!r.ok) return [];
     const txt = await r.text();
     const lines = txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
     const header = lines.shift().split(',').map(h=>h.trim());
@@ -297,11 +306,12 @@ async function loadCSV(url){
 }
 
 async function loadAll(){
-  [dash, full, scores] = await Promise.all([
-    loadJSON('hcpi/hcpi_dashboard.json'),
+  [full, scores] = await Promise.all([
     loadJSON('hcpi/hcpi_latest_full.json'),
     loadCSV('data/derived/provider_scores_latest.csv')
   ]);
+  // Use full as dash for compatibility
+  dash = full;
 }
 
 /* =================== Index =================== */
@@ -340,6 +350,9 @@ function getProvidersForFilter(){
   const region = document.getElementById('region').value;
   const cat = document.getElementById('category').value;
   
+  console.log('Filter - Region:', region, 'Category:', cat);
+  console.log('Total scores available:', scores.length);
+  
   const providerMap = new Map();
   
   scores.forEach(r=>{
@@ -350,7 +363,10 @@ function getProvidersForFilter(){
     if (!inCategory(prov, cat)) return;
     
     const price = r.effective_price_usd_per_gpu_hr;
-    if (!isFinite(price)) return;
+    if (!isFinite(price)) {
+      console.log('Skipping invalid price for', prov, ':', price);
+      return;
+    }
     
     if (!providerMap.has(prov)) {
       providerMap.set(prov, {name: prov, prices: [], regions: new Set(), types: new Set()});
@@ -360,6 +376,8 @@ function getProvidersForFilter(){
     entry.regions.add(reg);
     entry.types.add(r.type||'');
   });
+  
+  console.log('Providers after filtering:', providerMap.size);
   
   const providers = Array.from(providerMap.values()).map(p => {
     const sorted = p.prices.sort((a,b)=>a-b);
