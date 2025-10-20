@@ -62,10 +62,10 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       <div class="field">
         <label>Region</label>
         <select id="region" class="select">
+          <option>US (All)</option>
           <option>US-East</option>
           <option>US-Central</option>
           <option>US-West</option>
-          <option>US (All)</option>
         </select>
       </div>
 
@@ -164,7 +164,7 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 
       <div class="result-box">
         <div class="metric">
-          <span class="metric-label">Your cost (provider)</span>
+          <span class="metric-label">Your cost (total)</span>
           <span class="metric-value" id="roiCost">–</span>
         </div>
         <div class="metric">
@@ -234,7 +234,7 @@ const fmtUpdated = iso => {
   try{
     const d = new Date(iso);
     const date = d.toLocaleString(undefined,{month:'short', day:'2-digit'});
-    const time = d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false, timeZoneName:'short'});
+    const time = d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false});
     return `${date}, ${time}`;
   }catch(e){ return iso||'–'; }
 };
@@ -251,9 +251,9 @@ const hoursOf = s => {
 
 /* Provider categories (loose match set) */
 const PROVIDER_CATEGORY = {
-  "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
+  "Big 3 Hyperscalers": new Set(["AWS","Google Cloud (GCP)","Microsoft Azure","GCP","Azure","Google Cloud"]),
   "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","Crusoe Cloud","RunPod","Paperspace","FluidStack","Nebius"]),
-  "Serverless":         new Set(["Together.ai","Replicate","Together .ai"]),
+  "Serverless":         new Set(["Together.ai","Together .ai","Replicate"]),
   "Specialized":        new Set(["Jarvislabs","Vast.ai","OVHcloud","OVH Cloud","Hyperstack","TensorDock","Voltage Park","Scaleway","Genesis Cloud","SF Compute"])
 };
 const inCategory = (name, cat) => {
@@ -264,45 +264,43 @@ const inCategory = (name, cat) => {
 };
 
 /* =================== Data =================== */
-let dash={}, full={}, scores=[];
+let full={}, scores=[];
 let selectedProvider = null;
 
-async function loadJSON(url){ 
-  try{ 
-    const cacheBust = `${url}?t=${Date.now()}`;
-    const r=await fetch(cacheBust); 
-    if(!r.ok) throw 0; 
-    return await r.json(); 
-  }catch{ return {}; } 
+async function loadJSON(url){
+  try{
+    const r=await fetch(url + '?v=' + Date.now());
+    if(!r.ok) throw 0;
+    return await r.json();
+  }catch{ return {}; }
 }
+
+function parseCSVRobust(text){
+  // split into lines, handle CRLF
+  const lines = text.replace(/^\uFEFF/, '').split(/\r?\n/).filter(Boolean);
+  if (!lines.length) return {header:[], rows:[]};
+  const header = lines[0].match(/("([^"]|"")*"|[^,])+/g).map(h=>h.replace(/^"|"$/g,'').replace(/""/g,'"').trim());
+  const rows = lines.slice(1).map(line=>{
+    const cells = (line.match(/("([^"]|"")*"|[^,])+/g)||[]).map(c=>c.replace(/^"|"$/g,'').replace(/""/g,'"'));
+    const obj={}; header.forEach((h,i)=> obj[h]= (cells[i]??'').trim() );
+    return obj;
+  });
+  return {header, rows};
+}
+
 async function loadCSV(url){
   try{
-    const cacheBust = `${url}?t=${Date.now()}`;
-    const r = await fetch(cacheBust); 
-    if(!r.ok) return [];
+    const r = await fetch(url + '?v=' + Date.now()); if(!r.ok) return [];
     const txt = await r.text();
-    const lines = txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
-    const header = lines.shift().split(',').map(h=>h.trim());
-    
-    console.log('CSV Headers:', header);
-    
-    const rows = lines.filter(Boolean).map(line=>{
-      const cells = line.split(','); const o={};
-      header.forEach((h,i)=> o[h]= (cells[i]??'').trim() );
+    const {header, rows} = parseCSVRobust(txt);
+    return rows.map(o=>{
       o.gpu_count = Number(o.gpu_count||o.gpus||0);
       o.effective_price_usd_per_gpu_hr = Number(o.effective_price_usd_per_gpu_hr||o["$/GPU-hr"]||o.price||NaN);
+      o.region = (o.region||'').trim();
+      o.provider = (o.provider||'').trim();
       return o;
     });
-    
-    console.log('Total CSV rows loaded:', rows.length);
-    console.log('Sample row:', rows[0]);
-    console.log('Unique providers:', [...new Set(rows.map(r => r.provider))].length);
-    
-    return rows;
-  }catch(e){ 
-    console.error('CSV load error:', e);
-    return []; 
-  }
+  }catch{ return []; }
 }
 
 async function loadAll(){
@@ -310,8 +308,6 @@ async function loadAll(){
     loadJSON('hcpi/hcpi_latest_full.json'),
     loadCSV('data/derived/provider_scores_latest.csv')
   ]);
-  // Use full as dash for compatibility
-  dash = full;
 }
 
 /* =================== Index =================== */
@@ -319,67 +315,53 @@ function currentIndex(){
   const region = document.getElementById('region').value;
   const cat    = document.getElementById('category').value;
 
-  const ts = (dash && dash.timestamp) || (full && full.metadata && full.metadata.timestamp) || null;
+  const ts = (full && full.metadata && full.metadata.timestamp) || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
 
+  // Category slice first (if requested)
   if (cat !== 'All') {
-    const cats = (full && full.category_indices) || {};
+    const cats = full.category_indices || {};
     const item = cats[cat] || {};
-    if (region === 'US (All)') { if (isFinite(item.category_index)) return item.category_index; }
-    else {
-      const byReg = item.regional_indices || {};
-      if (isFinite(byReg[region])) return byReg[region];
-    }
+    if (region === 'US (All)' && isFinite(item.category_index)) return item.category_index;
+    const byReg = item.regional_indices || {};
+    if (isFinite(byReg[region])) return byReg[region];
     if (isFinite(item.category_index)) return item.category_index;
     return NaN;
   }
 
+  // Overall index (US or region)
   if (region === 'US (All)') {
-    return dash && isFinite(dash.us_index) ? dash.us_index :
-           (full && isFinite(full.us_index) ? full.us_index : NaN);
+    return isFinite(full.us_index) ? full.us_index : NaN;
   } else {
-    if (dash && dash.regions && isFinite(dash.regions[region])) return dash.regions[region];
-    const reg = full && full.regional_indices ? full.regional_indices[region] : undefined;
+    const reg = full.regional_indices ? full.regional_indices[region] : undefined;
     return isFinite(reg) ? reg : NaN;
   }
 }
-function renderIndex(){ document.getElementById('indexVal').textContent = fmtMoney(currentIndex()); }
+function renderIndex(){
+  const val = currentIndex();
+  document.getElementById('indexVal').textContent = isFinite(val) ? fmtMoney(val) : '–';
+}
 
 /* =================== Provider Grid =================== */
 function getProvidersForFilter(){
   const region = document.getElementById('region').value;
   const cat = document.getElementById('category').value;
   
-  console.log('Filter - Region:', region, 'Category:', cat);
-  console.log('Total scores available:', scores.length);
-  
   const providerMap = new Map();
-  
   scores.forEach(r=>{
     const prov = r.provider||'';
     const reg = r.region||'';
     if (!prov) return;
     if (region!=='US (All)' && reg!==region) return;
     if (!inCategory(prov, cat)) return;
-    
     const price = r.effective_price_usd_per_gpu_hr;
-    if (!isFinite(price)) {
-      console.log('Skipping invalid price for', prov, ':', price);
-      return;
-    }
-    
-    if (!providerMap.has(prov)) {
-      providerMap.set(prov, {name: prov, prices: [], regions: new Set(), types: new Set()});
-    }
+    if (!isFinite(price)) return;
+    if (!providerMap.has(prov)) providerMap.set(prov, {name: prov, prices: [], regions: new Set()});
     const entry = providerMap.get(prov);
     entry.prices.push(price);
     entry.regions.add(reg);
-    entry.types.add(r.type||'');
   });
-  
-  console.log('Providers after filtering:', providerMap.size);
-  
-  const providers = Array.from(providerMap.values()).map(p => {
+  const providers = Array.from(providerMap.values()).map(p=>{
     const sorted = p.prices.sort((a,b)=>a-b);
     return {
       name: p.name,
@@ -390,8 +372,7 @@ function getProvidersForFilter(){
       regions: Array.from(p.regions).join(', ')
     };
   });
-  
-  return providers.sort((a,b) => a.medianPrice - b.medianPrice);
+  return providers.sort((a,b)=>a.medianPrice-b.medianPrice);
 }
 
 function renderProviderGrid(){
@@ -399,94 +380,82 @@ function renderProviderGrid(){
   const grid = document.getElementById('providerGrid');
   const region = document.getElementById('region').value;
   const cat = document.getElementById('category').value;
-  
   document.getElementById('comparisonBadge').textContent = `${region} • ${cat}`;
-  
-  if (!providers.length) {
+  if (!providers.length){
     grid.innerHTML = '<div class="small" style="grid-column:1/-1;text-align:center;padding:20px">No providers found for this filter</div>';
     return;
   }
-  
   grid.innerHTML = providers.map(p => `
     <div class="provider-card ${selectedProvider && selectedProvider.name === p.name ? 'selected' : ''}" 
-         onclick="selectProvider(${JSON.stringify(p).replace(/"/g, '&quot;')})">
+         data-provider="${p.name}" data-price="${p.medianPrice}">
       <div class="provider-name">${p.name}</div>
       <div class="provider-price">${fmtMoney(p.medianPrice)}</div>
     </div>
   `).join('');
-}
 
-function selectProvider(provider){
-  selectedProvider = provider;
-  document.getElementById('selectedProvider').value = provider.name;
-  renderProviderGrid();
-  calculateAll();
+  grid.querySelectorAll('.provider-card').forEach(card=>{
+    card.addEventListener('click', ()=>{
+      const name = card.getAttribute('data-provider');
+      const price = Number(card.getAttribute('data-price'));
+      selectedProvider = {name, medianPrice: price};
+      document.getElementById('selectedProvider').value = name;
+      renderProviderGrid(); // re-render to show selected style
+      calculateAll();
+    });
+  });
 }
-
-window.selectProvider = selectProvider;
 
 /* =================== Workload Cost Estimator =================== */
 function calculateWorkload(){
   const workloadInput = Number(document.getElementById('workloadGPUHours').value) || 0;
   const unit = document.getElementById('workloadUnit').value;
-  
-  // Convert to GPU-hours
   let gpuHours = workloadInput;
   if (unit.includes('days')) gpuHours *= 24;
   if (unit.includes('weeks')) gpuHours *= 24 * 7;
-  
-  if (gpuHours <= 0) {
-    document.getElementById('workloadResults').style.display = 'none';
-    return;
-  }
-  
-  const providers = getProvidersForFilter();
-  if (!providers.length) return;
-  
-  // Calculate costs for all providers
+  if (gpuHours <= 0) { document.getElementById('workloadResults').style.display = 'none'; return; }
+  const providers = getProvidersForFilter(); if (!providers.length) return;
+
   const results = providers.map(p => ({
     name: p.name,
     pricePerHr: p.medianPrice,
     totalCost: p.medianPrice * gpuHours
-  })).sort((a, b) => a.totalCost - b.totalCost);
-  
+  })).sort((a,b)=>a.totalCost-b.totalCost);
   const cheapest = results[0].totalCost;
-  
-  // Render table
+
   const tbody = document.getElementById('workloadTableBody');
-  tbody.innerHTML = results.map((r, i) => {
+  tbody.innerHTML = results.map((r,i)=>{
     const diff = r.totalCost - cheapest;
-    const diffPct = cheapest > 0 ? (diff / cheapest) * 100 : 0;
-    const isCheapest = i === 0;
-    
+    const diffPct = cheapest>0 ? (diff/cheapest)*100 : 0;
+    const isCheapest = i===0;
     return `
-      <tr style="border-bottom:1px solid #2c3240;cursor:pointer" 
-          onclick="selectProviderByName('${r.name}')"
+      <tr style="border-bottom:1px solid #2c3240;cursor:pointer"
           class="${selectedProvider && selectedProvider.name === r.name ? 'selected-row' : ''}">
-        <td style="padding:8px">
-          ${isCheapest ? '<span style="color:var(--ok);margin-right:4px">★</span>' : ''}
-          ${r.name}
-        </td>
+        <td style="padding:8px">${isCheapest?'<span style="color:var(--ok);margin-right:4px">★</span>':''}${r.name}</td>
         <td style="padding:8px;text-align:right">${fmtMoney(r.pricePerHr)}</td>
         <td style="padding:8px;text-align:right;font-weight:600">${fmtMoney(r.totalCost)}</td>
-        <td style="padding:8px;text-align:right;color:${isCheapest ? 'var(--ok)' : diff > cheapest * 0.5 ? '#ff6b6b' : 'var(--warn)'}">
-          ${isCheapest ? 'Cheapest' : '+' + fmtMoney(diff) + ' (+' + diffPct.toFixed(0) + '%)'}
+        <td style="padding:8px;text-align:right;color:${isCheapest?'var(--ok)': diff>cheapest*0.5?'#ff6b6b':'var(--warn)'}">
+          ${isCheapest?'Cheapest':'+'+fmtMoney(diff)+' (+'+diffPct.toFixed(0)+'%)'}
         </td>
       </tr>
     `;
   }).join('');
-  
+  // Click-to-select rows
+  tbody.querySelectorAll('tr').forEach(tr=>{
+    tr.addEventListener('click', ()=>{
+      const name = tr.querySelector('td').textContent.replace('★','').trim();
+      const p = providers.find(x=>x.name===name);
+      if (p) {
+        selectedProvider = {name: p.name, medianPrice: p.medianPrice};
+        document.getElementById('selectedProvider').value = p.name;
+        renderProviderGrid();
+        calculateAll();
+      }
+    });
+  });
+
   document.getElementById('workloadResults').style.display = 'block';
   document.getElementById('workloadBadge').textContent = `${results.length} providers • ${fmtNum(gpuHours)} GPU-hours`;
 }
-
-function selectProviderByName(name){
-  const providers = getProvidersForFilter();
-  const provider = providers.find(p => p.name === name);
-  if (provider) selectProvider(provider);
-}
-
-window.selectProviderByName = selectProviderByName;
 
 /* =================== Calculators =================== */
 function calculateAll(){
@@ -516,10 +485,10 @@ function calculateAll(){
   document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
   document.getElementById('costTotal').textContent = fmtMoney(totalCost);
 
-  // ROI calculation
+  // ROI calculation (simple: revenue * utilization vs provider cost)
   const revenue = Number(document.getElementById('revenue').value) || 0;
   const utilPct = Number(document.getElementById('util').value) || 0;
-  const util = utilPct / 100;
+  const util = Math.max(0, Math.min(1, utilPct/100));
 
   const effectiveRevenue = revenue * util;
   const totalRevenue = effectiveRevenue * gpuHours;
@@ -528,24 +497,20 @@ function calculateAll(){
 
   document.getElementById('roiCost').textContent = fmtMoney(totalCost);
   document.getElementById('roiRevenue').textContent = fmtMoney(totalRevenue);
-  
   const marginPerHrEl = document.getElementById('roiMarginPerHr');
   marginPerHrEl.textContent = fmtMoney(marginPerHr) + '/hr';
   marginPerHrEl.className = 'metric-value ' + (marginPerHr >= 0 ? 'positive' : 'negative');
-  
   const profitEl = document.getElementById('roiProfit');
   profitEl.textContent = fmtMoney(profit);
   profitEl.className = 'result-value ' + (profit >= 0 ? 'positive' : 'negative');
 
-  // Breakeven analysis
+  // Breakeven annotation
   if (revenue > 0 && profit < 0) {
     const breakevenUtil = (price / revenue) * 100;
-    document.getElementById('roiBreakeven').textContent = 
-      `💡 Need ${breakevenUtil.toFixed(1)}% utilization to break even`;
+    document.getElementById('roiBreakeven').textContent = `💡 Need ${breakevenUtil.toFixed(1)}% utilization to break even`;
   } else if (profit >= 0) {
     const profitPct = totalCost > 0 ? (profit / totalCost) * 100 : 0;
-    document.getElementById('roiBreakeven').textContent = 
-      `✅ Profitable • ${profitPct.toFixed(0)}% return on cost`;
+    document.getElementById('roiBreakeven').textContent = `✅ Profitable • ${profitPct.toFixed(0)}% return on cost`;
   } else {
     document.getElementById('roiBreakeven').textContent = '';
   }
@@ -578,3 +543,4 @@ boot();
 </script>
 </body>
 </html>
+
