@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="en">
 <head>
@@ -37,7 +38,6 @@ button:hover{opacity:.85}
 .provider-card.selected{border-color:var(--accent);background:#1a2533}
 .provider-name{font-weight:600;margin-bottom:6px}
 .provider-price{font-size:20px;font-weight:700;color:var(--accent)}
-.provider-details{color:var(--sub);font-size:11px;margin-top:4px}
 footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2c3240}
 .metric:last-child{border:none}
@@ -46,6 +46,7 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .positive{color:var(--ok)}
 .negative{color:#ff6b6b}
 .section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.selected-row{background:#1a2533!important}
 </style>
 </head>
 <body>
@@ -145,44 +146,81 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       </div>
     </div>
 
-    <!-- ROI Estimator -->
+    <!-- ROI Calculator -->
     <div class="card">
-      <h3>ROI Estimator</h3>
+      <h3>ROI Calculator</h3>
+      <div class="small" style="margin-bottom:12px">For GPU resellers and cloud service providers</div>
       
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div class="field">
-          <label>Your Revenue ($/GPU-hr)</label>
+          <label>You charge customers ($/GPU-hr)</label>
           <input id="revenue" type="number" step="0.01" value="0.95" min="0">
         </div>
 
         <div class="field">
-          <label>GPU Utilization (%)</label>
+          <label>Average utilization (%)</label>
           <input id="util" type="number" step="1" value="70" min="0" max="100">
         </div>
       </div>
 
       <div class="result-box">
         <div class="metric">
-          <span class="metric-label">Provider Cost</span>
+          <span class="metric-label">Your cost (provider)</span>
           <span class="metric-value" id="roiCost">–</span>
         </div>
         <div class="metric">
-          <span class="metric-label">Your Revenue (@ utilization)</span>
+          <span class="metric-label">Your revenue (at utilization)</span>
           <span class="metric-value" id="roiRevenue">–</span>
         </div>
         <div class="metric">
-          <span class="metric-label">Gross Profit</span>
-          <span class="metric-value" id="roiProfit">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Margin</span>
-          <span class="metric-value" id="roiMargin">–</span>
+          <span class="metric-label">Profit margin per GPU-hr</span>
+          <span class="metric-value" id="roiMarginPerHr">–</span>
         </div>
         <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
-          <span class="metric-label" style="font-size:15px;font-weight:600">ROI</span>
-          <span class="result-value" id="roiValue">–</span>
+          <span class="metric-label" style="font-size:15px;font-weight:600">Total Profit</span>
+          <span class="result-value" id="roiProfit">–</span>
         </div>
         <div class="result-label" id="roiBreakeven"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Workload Cost Estimator -->
+  <div class="card">
+    <div class="section-header">
+      <h3>Workload Cost Estimator</h3>
+      <span class="badge" id="workloadBadge">Compare providers for your workload</span>
+    </div>
+    
+    <div class="row">
+      <div class="field">
+        <label>Your workload needs</label>
+        <input id="workloadGPUHours" type="number" step="1" value="100" min="1" placeholder="e.g., 100">
+      </div>
+      <div class="field">
+        <label>Unit</label>
+        <select id="workloadUnit" class="select">
+          <option>GPU-hours</option>
+          <option>GPU-days</option>
+          <option>GPU-weeks</option>
+        </select>
+      </div>
+      <button id="btnWorkload">Compare All Providers</button>
+    </div>
+
+    <div id="workloadResults" class="result-box" style="display:none">
+      <div style="max-height:400px;overflow-y:auto">
+        <table id="workloadTable" style="width:100%;border-collapse:collapse">
+          <thead style="position:sticky;top:0;background:var(--muted);border-bottom:2px solid #2c3240">
+            <tr style="text-align:left">
+              <th style="padding:8px;color:var(--sub);font-size:13px">Provider</th>
+              <th style="padding:8px;color:var(--sub);font-size:13px;text-align:right">Price/GPU-hr</th>
+              <th style="padding:8px;color:var(--sub);font-size:13px;text-align:right">Total Cost</th>
+              <th style="padding:8px;color:var(--sub);font-size:13px;text-align:right">vs Cheapest</th>
+            </tr>
+          </thead>
+          <tbody id="workloadTableBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
@@ -345,9 +383,6 @@ function renderProviderGrid(){
          onclick="selectProvider(${JSON.stringify(p).replace(/"/g, '&quot;')})">
       <div class="provider-name">${p.name}</div>
       <div class="provider-price">${fmtMoney(p.medianPrice)}</div>
-      <div class="provider-details">
-        ${p.count} config${p.count > 1 ? 's' : ''} • ${fmtMoney(p.minPrice)}–${fmtMoney(p.maxPrice)}
-      </div>
     </div>
   `).join('');
 }
@@ -361,6 +396,69 @@ function selectProvider(provider){
 
 window.selectProvider = selectProvider;
 
+/* =================== Workload Cost Estimator =================== */
+function calculateWorkload(){
+  const workloadInput = Number(document.getElementById('workloadGPUHours').value) || 0;
+  const unit = document.getElementById('workloadUnit').value;
+  
+  // Convert to GPU-hours
+  let gpuHours = workloadInput;
+  if (unit.includes('days')) gpuHours *= 24;
+  if (unit.includes('weeks')) gpuHours *= 24 * 7;
+  
+  if (gpuHours <= 0) {
+    document.getElementById('workloadResults').style.display = 'none';
+    return;
+  }
+  
+  const providers = getProvidersForFilter();
+  if (!providers.length) return;
+  
+  // Calculate costs for all providers
+  const results = providers.map(p => ({
+    name: p.name,
+    pricePerHr: p.medianPrice,
+    totalCost: p.medianPrice * gpuHours
+  })).sort((a, b) => a.totalCost - b.totalCost);
+  
+  const cheapest = results[0].totalCost;
+  
+  // Render table
+  const tbody = document.getElementById('workloadTableBody');
+  tbody.innerHTML = results.map((r, i) => {
+    const diff = r.totalCost - cheapest;
+    const diffPct = cheapest > 0 ? (diff / cheapest) * 100 : 0;
+    const isCheapest = i === 0;
+    
+    return `
+      <tr style="border-bottom:1px solid #2c3240;cursor:pointer" 
+          onclick="selectProviderByName('${r.name}')"
+          class="${selectedProvider && selectedProvider.name === r.name ? 'selected-row' : ''}">
+        <td style="padding:8px">
+          ${isCheapest ? '<span style="color:var(--ok);margin-right:4px">★</span>' : ''}
+          ${r.name}
+        </td>
+        <td style="padding:8px;text-align:right">${fmtMoney(r.pricePerHr)}</td>
+        <td style="padding:8px;text-align:right;font-weight:600">${fmtMoney(r.totalCost)}</td>
+        <td style="padding:8px;text-align:right;color:${isCheapest ? 'var(--ok)' : diff > cheapest * 0.5 ? '#ff6b6b' : 'var(--warn)'}">
+          ${isCheapest ? 'Cheapest' : '+' + fmtMoney(diff) + ' (+' + diffPct.toFixed(0) + '%)'}
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  document.getElementById('workloadResults').style.display = 'block';
+  document.getElementById('workloadBadge').textContent = `${results.length} providers • ${fmtNum(gpuHours)} GPU-hours`;
+}
+
+function selectProviderByName(name){
+  const providers = getProvidersForFilter();
+  const provider = providers.find(p => p.name === name);
+  if (provider) selectProvider(provider);
+}
+
+window.selectProviderByName = selectProviderByName;
+
 /* =================== Calculators =================== */
 function calculateAll(){
   if (!selectedProvider) {
@@ -371,8 +469,7 @@ function calculateAll(){
     document.getElementById('roiCost').textContent = '–';
     document.getElementById('roiRevenue').textContent = '–';
     document.getElementById('roiProfit').textContent = '–';
-    document.getElementById('roiMargin').textContent = '–';
-    document.getElementById('roiValue').textContent = '–';
+    document.getElementById('roiMarginPerHr').textContent = '–';
     document.getElementById('roiBreakeven').textContent = '';
     return;
   }
@@ -395,34 +492,31 @@ function calculateAll(){
   const utilPct = Number(document.getElementById('util').value) || 0;
   const util = utilPct / 100;
 
-  const totalRevenue = revenue * util * gpuHours;
+  const effectiveRevenue = revenue * util;
+  const totalRevenue = effectiveRevenue * gpuHours;
   const profit = totalRevenue - totalCost;
-  const margin = totalCost > 0 ? (profit / totalRevenue) * 100 : 0;
-  const roi = totalCost > 0 ? (profit / totalCost) * 100 : 0;
+  const marginPerHr = effectiveRevenue - price;
 
   document.getElementById('roiCost').textContent = fmtMoney(totalCost);
   document.getElementById('roiRevenue').textContent = fmtMoney(totalRevenue);
   
+  const marginPerHrEl = document.getElementById('roiMarginPerHr');
+  marginPerHrEl.textContent = fmtMoney(marginPerHr) + '/hr';
+  marginPerHrEl.className = 'metric-value ' + (marginPerHr >= 0 ? 'positive' : 'negative');
+  
   const profitEl = document.getElementById('roiProfit');
   profitEl.textContent = fmtMoney(profit);
-  profitEl.className = 'metric-value ' + (profit >= 0 ? 'positive' : 'negative');
-  
-  const marginEl = document.getElementById('roiMargin');
-  marginEl.textContent = isFinite(margin) ? margin.toFixed(1) + '%' : '–';
-  marginEl.className = 'metric-value ' + (margin >= 0 ? 'positive' : 'negative');
-  
-  const roiEl = document.getElementById('roiValue');
-  roiEl.textContent = isFinite(roi) ? roi.toFixed(1) + '%' : '–';
-  roiEl.className = 'result-value ' + (roi >= 0 ? 'positive' : 'negative');
+  profitEl.className = 'result-value ' + (profit >= 0 ? 'positive' : 'negative');
 
   // Breakeven analysis
   if (revenue > 0 && profit < 0) {
     const breakevenUtil = (price / revenue) * 100;
     document.getElementById('roiBreakeven').textContent = 
-      `Need ${breakevenUtil.toFixed(1)}% utilization to break even`;
+      `💡 Need ${breakevenUtil.toFixed(1)}% utilization to break even`;
   } else if (profit >= 0) {
+    const profitPct = totalCost > 0 ? (profit / totalCost) * 100 : 0;
     document.getElementById('roiBreakeven').textContent = 
-      `Profitable at current utilization`;
+      `✅ Profitable • ${profitPct.toFixed(0)}% return on cost`;
   } else {
     document.getElementById('roiBreakeven').textContent = '';
   }
@@ -438,6 +532,10 @@ function setupListeners(){
   document.getElementById('duration').addEventListener('change', calculateAll);
   document.getElementById('revenue').addEventListener('input', calculateAll);
   document.getElementById('util').addEventListener('input', calculateAll);
+  
+  document.getElementById('btnWorkload').addEventListener('click', calculateWorkload);
+  document.getElementById('workloadGPUHours').addEventListener('input', calculateWorkload);
+  document.getElementById('workloadUnit').addEventListener('change', calculateWorkload);
 }
 
 /* =================== Boot =================== */
