@@ -7,95 +7,166 @@
 <link rel="icon" href="data:,">
 <style>
 :root{--bg:#0f1216;--panel:#171b21;--muted:#202532;--text:#e7edf3;--sub:#9fb0c3;--accent:#7bd7ff;--ok:#27d980;}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,sans-serif;padding:2rem;}
-h1{margin:0 0 .3rem;font-size:2rem;} select,input,button{background:var(--muted);color:var(--text);
-border:1px solid #2c3240;border-radius:6px;padding:.4rem .6rem;font:inherit;}
-button{cursor:pointer;background:var(--accent);color:#000;font-weight:600;}
-.card{background:var(--panel);padding:1rem 1.5rem;border-radius:12px;margin-top:1.2rem;}
-.flex{display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;}
-.big{font-size:4rem;font-weight:700;color:var(--accent);}
-.sub{color:var(--sub);}
-footer{margin-top:2rem;color:var(--sub);font-size:.9rem;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;padding:20px}
+h1{margin:0 0 6px;font-size:28px}
+.small{color:var(--sub);font-size:13px}
+.select,input,button{background:var(--muted);color:var(--text);border:1px solid #2c3240;border-radius:8px;padding:8px 10px;font:inherit}
+button{cursor:pointer;background:var(--accent);color:#052535;font-weight:700;border:none}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.card{background:var(--panel);border:1px solid #222836;border-radius:12px;padding:16px;margin-top:12px}
+.center{text-align:center}
+.big{font-size:64px;line-height:1;font-weight:800;color:var(--accent);letter-spacing:1px}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}
+.kv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+footer{margin-top:16px;color:var(--sub);font-size:12px}
 </style>
 </head>
 <body>
-<h1>Forward Compute Index</h1>
-<p class="sub">Real-time regional and category GPU pricing benchmark</p>
+  <h1>Forward Compute Index</h1>
+  <div class="small">Real-time regional and category GPU pricing benchmark</div>
 
-<div class="flex">
-  <label>Region</label>
-  <select id="region">
-    <option>US-East</option><option>US-Central</option><option>US-West</option><option>US (All)</option>
-  </select>
-  <label>Category</label>
-  <select id="category">
-    <option>All</option>
-    <option>Big 3 Hyperscalers</option>
-    <option>Major GPU Clouds</option>
-    <option>Serverless</option>
-    <option>Specialized</option>
-  </select>
-  <button onclick="update()">Update</button>
-</div>
+  <div class="row" style="margin-top:10px">
+    <label class="small">Region</label>
+    <select id="region" class="select">
+      <option>US-East</option>
+      <option>US-Central</option>
+      <option>US-West</option>
+      <option>US (All)</option>
+    </select>
 
-<div class="card" style="text-align:center">
-  <div class="big" id="indexValue">–</div>
-  <div style="color:var(--ok);margin-top:.2rem">● Live</div>
-  <div class="sub" id="updated">Updated: –</div>
-</div>
+    <label class="small">Category</label>
+    <select id="category" class="select">
+      <option>All</option>
+      <option>Big 3 Hyperscalers</option>
+      <option>Major GPU Clouds</option>
+      <option>Serverless</option>
+      <option>Specialized</option>
+    </select>
 
-<div class="card">
-  <h2>Total Cost Calculator</h2>
-  <div class="flex">
-    <input id="price" type="number" step="0.01" placeholder="Price $/GPU-hr">
-    <input id="count" type="number" step="1" value="8" placeholder="GPU count">
-    <input id="hours" type="number" step="0.5" value="1" placeholder="Hours">
-    <button onclick="calcCost()">Calculate</button>
+    <button id="btnRefresh">Update</button>
   </div>
-  <p id="costResult" class="sub">Total cost: –</p>
-</div>
 
-<div class="card">
-  <h2>ROI Estimator</h2>
-  <div class="flex">
-    <input id="revenue" type="number" step="0.01" placeholder="Revenue $/GPU-hr">
-    <input id="util" type="number" step="0.01" value="0.7" placeholder="Utilisation 0–1">
-    <button onclick="calcROI()">Estimate ROI</button>
+  <div class="card center">
+    <div id="indexVal" class="big">–</div>
+    <div class="small"><span class="dot"></span>Live</div>
+    <div id="updated" class="small" style="margin-top:4px">Updated: –</div>
   </div>
-  <p id="roiResult" class="sub">ROI: –</p>
-</div>
 
-<footer>Data source: <code>hcpi/hcpi_dashboard.json</code></footer>
+  <div class="card">
+    <h3 style="margin:0 0 8px">Total Cost Calculator</h3>
+    <div class="row">
+      <input id="price" class="select" type="number" step="0.01" placeholder="Price $/GPU-hr">
+      <input id="count" class="select" type="number" step="1" value="8" placeholder="GPU count">
+      <input id="hours" class="select" type="number" step="0.5" value="1" placeholder="Hours">
+      <button id="btnCost">Calculate</button>
+    </div>
+    <div id="costOut" class="small" style="margin-top:8px">Total cost: $0.00 for 8 GPU × 0 hr × $0/hr</div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin:0 0 8px">ROI Estimator</h3>
+    <div class="row">
+      <input id="revenue" class="select" type="number" step="0.01" placeholder="Revenue $/GPU-hr" value="0.68">
+      <input id="util" class="select" type="number" step="0.01" value="0.70" placeholder="Utilisation 0–1">
+      <button id="btnROI">Estimate ROI</button>
+    </div>
+    <div id="roiOut" class="small" style="margin-top:8px">ROI: –</div>
+  </div>
+
+  <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code></footer>
 
 <script>
-async function update(){
-  const regionSel=document.getElementById('region').value;
-  const catSel=document.getElementById('category').value;
-  const res=await fetch('hcpi/hcpi_dashboard.json');
-  const data=await res.json();
-  let val;
-  if(catSel!=='All'){val=data.categories[catSel]??null;}
-  else if(regionSel==='US (All)'){val=data.us_index;}
-  else{val=data.regions[regionSel]??null;}
-  const el=document.getElementById('indexValue');
-  if(!val){el.textContent='–';return;}
-  el.textContent=`$${val.toFixed(2)}`;
-  document.getElementById('updated').textContent='Updated: '+data.timestamp;
+const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
+const fmtUpdated = iso => {
+  try{
+    const d = new Date(iso);
+    return d.toLocaleString(undefined,{month:'short', day:'2-digit'}) + ', ' +
+           d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false, timeZoneName:'short'}).replace(':00 ',' ');
+  }catch(e){ return iso||'–'; }
+};
+
+let dash={}, full={};
+
+async function loadSources(){
+  // Both files exist thanks to master_runner.py
+  const [a,b] = await Promise.all([
+    fetch('hcpi/hcpi_dashboard.json').then(r=>r.json()).catch(()=>({})),
+    fetch('hcpi/hcpi_latest_full.json').then(r=>r.json()).catch(()=>({}))
+  ]);
+  dash=a; full=b;
 }
+
+function currentValue(){
+  const region = document.getElementById('region').value;
+  const cat    = document.getElementById('category').value;
+
+  // Timestamp (prefer dashboard if available)
+  const ts = (dash && dash.timestamp) || (full && full.metadata && full.metadata.timestamp) || null;
+  document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
+
+  // Category-specific per-region when possible
+  if (cat !== 'All') {
+    const cats = (full && full.category_indices) || {};
+    const item = cats[cat] || {};
+    if (region === 'US (All)') {
+      if (isFinite(item.category_index)) return item.category_index;
+    } else {
+      const byReg = item.regional_indices || {};
+      if (isFinite(byReg[region])) return byReg[region];
+    }
+    // graceful fallback to US category index
+    if (isFinite(item.category_index)) return item.category_index;
+    return NaN;
+  }
+
+  // No category filter -> use regional or US index from dashboard JSON
+  if (region === 'US (All)') {
+    return dash && isFinite(dash.us_index) ? dash.us_index : (full && isFinite(full.us_index) ? full.us_index : NaN);
+  } else {
+    if (dash && dash.regions && isFinite(dash.regions[region])) return dash.regions[region];
+    // fallback from full JSON (if present)
+    const reg = full && full.regional_indices ? full.regional_indices[region] : undefined;
+    return isFinite(reg) ? reg : NaN;
+  }
+}
+
+function render(){
+  const val = currentValue();
+  document.getElementById('indexVal').textContent = fmtMoney(val);
+}
+
 function calcCost(){
-  const p=parseFloat(price.value)||0,c=parseFloat(count.value)||0,h=parseFloat(hours.value)||0;
+  const p=Number(document.getElementById('price').value)||0;
+  const c=Number(document.getElementById('count').value)||0;
+  const h=Number(document.getElementById('hours').value)||0;
   const t=p*c*h;
-  costResult.textContent=`Total cost: $${t.toFixed(2)} for ${c} GPU × ${h} hr × $${p}/hr`;
+  document.getElementById('costOut').textContent = `Total cost: ${fmtMoney(t)} for ${c} GPU × ${h} hr × ${fmtMoney(p).replace('$','$/')}/hr`;
 }
+
 function calcROI(){
-  const p=parseFloat(price.value)||0,r=parseFloat(revenue.value)||0,u=parseFloat(util.value)||0;
-  if(!p||!r){roiResult.textContent='Enter price and revenue';return;}
-  const roi=((r*u-p)/p)*100;
-  roiResult.textContent=`ROI: ${roi.toFixed(1)} % at ${(u*100).toFixed(0)} % utilisation`;
+  const p=Number(document.getElementById('price').value)||0;
+  const r=Number(document.getElementById('revenue').value)||0;
+  const u=Number(document.getElementById('util').value)||0;
+  if(!(p>0) || !(r>0)){ document.getElementById('roiOut').textContent='ROI: enter price & revenue'; return; }
+  const roi=((r*u - p)/p)*100;
+  document.getElementById('roiOut').textContent = `ROI: ${roi.toFixed(1)}% at ${(u*100).toFixed(0)}% utilisation`;
 }
-update();
+
+async function boot(){
+  await loadSources();
+  render();
+  // auto-update when filters change
+  document.getElementById('region').addEventListener('change', render);
+  document.getElementById('category').addEventListener('change', render);
+  document.getElementById('btnRefresh').addEventListener('click', render);
+  document.getElementById('btnCost').addEventListener('click', calcCost);
+  document.getElementById('btnROI').addEventListener('click', calcROI);
+}
+boot();
 </script>
 </body>
 </html>
+
 
 
