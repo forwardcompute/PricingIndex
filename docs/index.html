@@ -11,18 +11,17 @@
 body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Inter,Roboto,Helvetica,Arial,sans-serif;padding:20px}
 h1{margin:0 0 6px;font-size:28px}
 .small{color:var(--sub);font-size:13px}
-.select,input,button{background:var(--muted);color:var(--text);border:1px solid #2c3240;border-radius:8px;padding:8px 10px;font:inherit}
+.select,select,input,button{background:var(--muted);color:var(--text);border:1px solid #2c3240;border-radius:8px;padding:8px 10px;font:inherit}
+select{appearance:none}
+input[readonly]{opacity:.75}
 button{cursor:pointer;background:var(--accent);color:#052535;font-weight:700;border:none}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .card{background:var(--panel);border:1px solid #222836;border-radius:12px;padding:16px;margin-top:12px}
 .center{text-align:center}
 .big{font-size:64px;line-height:1;font-weight:800;color:var(--accent);letter-spacing:1px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}
-.input-inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-.input-inline > *{min-width:120px}
-.sublabel{font-size:12px;color:var(--sub);margin-top:4px}
-footer{margin-top:16px;color:var(--sub);font-size:12px}
 .badge{display:inline-flex;align-items:center;gap:6px;background:#1e2634;border:1px solid #2c3143;border-radius:999px;padding:2px 10px;color:#bcd0e6;font-size:12px}
+footer{margin-top:16px;color:var(--sub);font-size:12px}
 </style>
 </head>
 <body>
@@ -56,23 +55,22 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
     <div id="updated" class="small" style="margin-top:4px">Updated: –</div>
   </div>
 
-  <!-- ===== TOTAL COST CALCULATOR (Improved) ===== -->
+  <!-- =================== TOTAL COST (Provider-driven) =================== -->
   <div class="card">
     <div class="row" style="justify-content:space-between;align-items:flex-end">
       <h3 style="margin:0">Total Cost Calculator</h3>
       <span class="badge" id="calcSliceBadge">–</span>
     </div>
 
-    <div class="input-inline" style="margin-top:8px">
-      <div style="min-width:220px">
+    <div class="row" style="margin-top:8px">
+      <div>
         <div class="small" style="margin-bottom:4px">Provider</div>
-        <input id="provInput" class="select" list="provList" placeholder="Type to search…">
-        <datalist id="provList"></datalist>
+        <select id="provSelect" class="select" style="min-width:240px"></select>
       </div>
 
       <div>
         <div class="small" style="margin-bottom:4px">Price $/GPU-hr</div>
-        <input id="price" class="select" type="number" step="0.01" placeholder="e.g. 3.25">
+        <input id="price" class="select" type="number" step="0.01" readonly placeholder="auto">
       </div>
 
       <div>
@@ -93,15 +91,21 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
       <button id="btnCost">Calculate</button>
     </div>
 
-    <div id="calcSummary" class="sublabel" style="margin-top:8px">Set a provider or price to estimate cost.</div>
+    <div id="calcSummary" class="small" style="margin-top:8px">Select a provider to estimate cost.</div>
   </div>
 
-  <!-- ===== ROI ===== -->
+  <!-- =================== ROI (Calculator) =================== -->
   <div class="card">
     <h3 style="margin:0 0 8px">ROI Estimator</h3>
     <div class="row">
-      <input id="revenue" class="select" type="number" step="0.01" placeholder="Revenue $/GPU-hr" value="0.68">
-      <input id="util" class="select" type="number" step="0.01" value="0.70" placeholder="Utilisation 0–1">
+      <div>
+        <div class="small" style="margin-bottom:4px">Revenue $/GPU-hr</div>
+        <input id="revenue" class="select" type="number" step="0.01" value="0.68">
+      </div>
+      <div>
+        <div class="small" style="margin-bottom:4px">Utilisation (0–1)</div>
+        <input id="util" class="select" type="number" step="0.01" value="0.70">
+      </div>
       <button id="btnROI">Estimate ROI</button>
     </div>
     <div id="roiOut" class="small" style="margin-top:8px">ROI: –</div>
@@ -110,7 +114,7 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
   <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
 
 <script>
-/* ---------- Utilities ---------- */
+/* =================== Utils =================== */
 const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
 const fmtUpdated = iso => {
   try{
@@ -120,7 +124,7 @@ const fmtUpdated = iso => {
     return `${date}, ${time}`;
   }catch(e){ return iso||'–'; }
 };
-const durHours = s => {
+const hoursOf = s => {
   s=String(s||'').toLowerCase();
   if (s.includes('month')) return 24*30;
   if (s.includes('week'))  return 24*7;
@@ -128,18 +132,23 @@ const durHours = s => {
   return 1;
 };
 
-/* ---------- Category map (same groupings you use in index_calculator) ---------- */
+/* Provider categories (loose match set) */
 const PROVIDER_CATEGORY = {
   "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
   "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","Crusoe Cloud","RunPod","Paperspace","FluidStack","Nebius"]),
-  "Serverless":         new Set(["Together.ai","Replicate","Together .ai","Together .ai".replace(' .','')]),
+  "Serverless":         new Set(["Together.ai","Replicate","Together .ai"]),
   "Specialized":        new Set(["Jarvislabs","Vast.ai","OVHcloud","OVH Cloud","Hyperstack","TensorDock","Voltage Park","Scaleway","Genesis Cloud","SF Compute"])
 };
+const inCategory = (name, cat) => {
+  if (cat==='All') return true;
+  const set = PROVIDER_CATEGORY[cat]; if(!set) return true;
+  for (const v of set) if ((name||'').toLowerCase().includes(v.toLowerCase())) return true;
+  return false;
+};
 
-/* ---------- State ---------- */
-let dash={}, full={}, scores=[]; // dashboard JSON, full JSON, latest CSV rows
+/* =================== Data =================== */
+let dash={}, full={}, scores=[];
 
-/* ---------- Data loading ---------- */
 async function loadJSON(url){ try{ const r=await fetch(url); if(!r.ok) throw 0; return await r.json(); }catch{ return {}; } }
 async function loadCSV(url){
   try{
@@ -150,7 +159,6 @@ async function loadCSV(url){
     return lines.filter(Boolean).map(line=>{
       const cells = line.split(','); const o={};
       header.forEach((h,i)=> o[h]= (cells[i]??'').trim() );
-      // coerce a few
       o.gpu_count = Number(o.gpu_count||o.gpus||0);
       o.effective_price_usd_per_gpu_hr = Number(o.effective_price_usd_per_gpu_hr||o["$/GPU-hr"]||o.price||NaN);
       return o;
@@ -158,7 +166,7 @@ async function loadCSV(url){
   }catch{ return []; }
 }
 
-async function loadSources(){
+async function loadAll(){
   [dash, full, scores] = await Promise.all([
     loadJSON('hcpi/hcpi_dashboard.json'),
     loadJSON('hcpi/hcpi_latest_full.json'),
@@ -166,8 +174,8 @@ async function loadSources(){
   ]);
 }
 
-/* ---------- Index rendering ---------- */
-function currentValue(){
+/* =================== Index =================== */
+function currentIndex(){
   const region = document.getElementById('region').value;
   const cat    = document.getElementById('category').value;
 
@@ -177,9 +185,8 @@ function currentValue(){
   if (cat !== 'All') {
     const cats = (full && full.category_indices) || {};
     const item = cats[cat] || {};
-    if (region === 'US (All)') {
-      if (isFinite(item.category_index)) return item.category_index;
-    } else {
+    if (region === 'US (All)') { if (isFinite(item.category_index)) return item.category_index; }
+    else {
       const byReg = item.regional_indices || {};
       if (isFinite(byReg[region])) return byReg[region];
     }
@@ -196,104 +203,102 @@ function currentValue(){
     return isFinite(reg) ? reg : NaN;
   }
 }
+function renderIndex(){ document.getElementById('indexVal').textContent = fmtMoney(currentIndex()); }
 
-function renderIndex(){
-  document.getElementById('indexVal').textContent = fmtMoney(currentValue());
-}
-
-/* ---------- Provider list + auto pricing ---------- */
-function providerInCategory(name, cat){
-  if (cat==='All') return true;
-  const set = PROVIDER_CATEGORY[cat];
-  if (!set) return true;
-  // loose match
-  for (const v of set) { if (name && name.toLowerCase().includes(v.toLowerCase())) return true; }
-  return false;
-}
-
-function refreshProviderList(){
+/* =================== Provider dropdown + pricing =================== */
+function refreshProviderDropdown(){
   const region = document.getElementById('region').value;
   const cat    = document.getElementById('category').value;
-  const dl = document.getElementById('provList');
-  const seen = new Set();
-  const provs = [];
+  const sel    = document.getElementById('provSelect');
 
+  // distinct provider list for current slice
+  const seen = new Set(), list=[];
   scores.forEach(r=>{
-    const prov = r.provider || '';
-    const reg  = r.region || '';
+    const prov = r.provider||''; const reg=r.region||'';
     if (!prov) return;
-    // filter region
-    if (region!=='US (All)' && reg !== region) return;
-    // filter category
-    if (!providerInCategory(prov, cat)) return;
-    if (!seen.has(prov)){ seen.add(prov); provs.push(prov); }
+    if (region!=='US (All)' && reg!==region) return;
+    if (!inCategory(prov, cat)) return;
+    if (!seen.has(prov)){ seen.add(prov); list.push(prov); }
   });
+  list.sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = ['<option value="" disabled selected>Select provider</option>']
+                  .concat(list.map(p=>`<option>${p}</option>`)).join('');
 
-  provs.sort((a,b)=>a.localeCompare(b));
-  dl.innerHTML = provs.map(p=>`<option value="${p}">`).join('');
-
-  // Badge
-  const badge = document.getElementById('calcSliceBadge');
-  badge.textContent = `${region} • ${cat}`;
+  document.getElementById('calcSliceBadge').textContent = `${region} • ${cat}`;
+  document.getElementById('price').value = '';
+  document.getElementById('calcSummary').textContent = 'Select a provider to estimate cost.';
 }
 
-function autoPriceFromProvider(){
-  const prov = document.getElementById('provInput').value.trim();
-  if (!prov){ return; }
+function medianPriceForProvider(prov, region){
+  // Prefer region + on-demand + 1h → then relax progressively
+  let rows = scores.filter(r => (r.provider||'').toLowerCase()===prov.toLowerCase());
+  if (!rows.length) return NaN;
 
-  const region = document.getElementById('region').value;
-  // rows for provider (prefer current region; fallback any region)
-  let rows = scores.filter(r => (r.provider||'').toLowerCase() === prov.toLowerCase());
-  if (!rows.length) return;
+  const byRegion = region==='US (All)' ? rows : rows.filter(r=>r.region===region);
+  rows = byRegion.length ? byRegion : rows;
 
-  let rowsReg = region==='US (All)' ? rows : rows.filter(r=>r.region===region);
-  if (!rowsReg.length) rowsReg = rows; // fallback
-
-  // Prefer On-Demand & 1 hour if available
-  const pref = rowsReg.filter(r => String(r.type||'').toLowerCase().includes('on') && /1 ?h|1 ?hour/i.test(r.duration||''));
-  const pool = pref.length ? pref : rowsReg;
+  let pref = rows.filter(r=>String(r.type||'').toLowerCase().includes('on') && /(^1 ?h)|(^1 ?hour)/i.test(r.duration||''));
+  if (!pref.length) pref = rows.filter(r=>String(r.type||'').toLowerCase().includes('on'));
+  const pool = pref.length ? pref : rows;
 
   const prices = pool.map(r=>r.effective_price_usd_per_gpu_hr).filter(Number.isFinite).sort((a,b)=>a-b);
-  if (!prices.length) return;
-
-  const mid = prices[Math.floor(prices.length/2)];
-  document.getElementById('price').value = String(mid.toFixed(2));
+  if (!prices.length) return NaN;
+  return prices[Math.floor(prices.length/2)];
 }
 
-/* ---------- Calculators ---------- */
+function onProviderChange(){
+  const prov = document.getElementById('provSelect').value;
+  if (!prov) return;
+  const region = document.getElementById('region').value;
+  const p = medianPriceForProvider(prov, region);
+  document.getElementById('price').value = isFinite(p) ? p.toFixed(2) : '';
+  calcCost(); // live update
+}
+
+/* =================== Calculators =================== */
 function calcCost(){
+  const prov  = document.getElementById('provSelect').value;
   const price = Number(document.getElementById('price').value)||0;
   const count = Number(document.getElementById('count').value)||0;
   const dur   = document.getElementById('duration').value;
-  const hrs   = durHours(dur);
+  const hrs   = hoursOf(dur);
+  if (!prov || !(price>0)){ document.getElementById('calcSummary').textContent='Select a provider (price auto-filled)'; return; }
   const total = price * count * hrs;
   document.getElementById('calcSummary').textContent =
-    `Total cost: ${fmtMoney(total)} — ${count} GPU × ${dur} × ${fmtMoney(price).replace('$','$/')}/hr`;
+    `Total cost: ${fmtMoney(total)} — ${prov} • ${count} GPU × ${dur} × ${fmtMoney(price).replace('$','$/')}/hr`;
 }
 
 function calcROI(){
-  const p=Number(document.getElementById('price').value)||0;
-  const r=Number(document.getElementById('revenue').value)||0;
-  const u=Number(document.getElementById('util').value)||0;
-  const out=document.getElementById('roiOut');
-  if(!(p>0) || !(r>0)){ out.textContent='ROI: enter price & revenue'; return; }
-  const roi=((r*u - p)/p)*100;
-  out.textContent = `ROI: ${roi.toFixed(1)}% at ${(u*100).toFixed(0)}% utilisation`;
+  // ROI model: revenue vs cost, using current provider price, user revenue & utilisation
+  const price = Number(document.getElementById('price').value)||0;      // $/GPU-hr (from provider)
+  const rev   = Number(document.getElementById('revenue').value)||0;    // $/GPU-hr
+  const util  = Number(document.getElementById('util').value)||0;       // 0–1
+  const count = Number(document.getElementById('count').value)||0;
+  const hrs   = hoursOf(document.getElementById('duration').value);
+
+  const out   = document.getElementById('roiOut');
+  if (!(price>0) || !(rev>0) || !(util>=0)){ out.textContent='ROI: select provider and enter revenue/utilisation'; return; }
+
+  const cost    = price * count * hrs;
+  const revenue = rev   * util  * count * hrs;
+  const roiPct  = cost>0 ? ((revenue - cost)/cost)*100 : NaN;
+
+  out.textContent = `ROI: ${isFinite(roiPct)?roiPct.toFixed(1)+'%':'–'}  ·  Revenue ${fmtMoney(revenue)}  ·  Cost ${fmtMoney(cost)}`;
 }
 
-/* ---------- Boot ---------- */
+/* =================== Boot =================== */
 async function boot(){
-  await loadSources();
+  await loadAll();
   renderIndex();
-  refreshProviderList();
+  refreshProviderDropdown();
 
-  // index updates
-  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); refreshProviderList(); });
-  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); refreshProviderList(); });
-  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); refreshProviderList(); });
+  // filters
+  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); refreshProviderDropdown(); });
+  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); refreshProviderDropdown(); });
+  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); refreshProviderDropdown(); });
 
-  // calculator
-  document.getElementById('provInput').addEventListener('change', ()=>{ autoPriceFromProvider(); calcCost(); });
+  // calculators
+  document.getElementById('provSelect').addEventListener('change', onProviderChange);
   document.getElementById('btnCost').addEventListener('click', calcCost);
   document.getElementById('btnROI').addEventListener('click', calcROI);
 }
@@ -301,7 +306,5 @@ boot();
 </script>
 </body>
 </html>
-
-
 
 
