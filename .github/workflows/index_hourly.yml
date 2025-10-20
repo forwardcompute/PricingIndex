@@ -1,62 +1,73 @@
-# .github/workflows/index_hourly.yml
 name: Price-IQ / HCPI — Hourly
 
 on:
   schedule:
-    - cron: "5 * * * *"  # every hour at minute 5
+    - cron: "5 * * * *"
   workflow_dispatch:
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
+permissions:
+  contents: read
+  pages: write
+  id-token: write
 
+concurrency:
+  group: "github-pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-bundle:
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
 
-      - name: Install dependencies
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          # optional: playwright if your scrapers need it
-          # pip install playwright
-          # python -m playwright install --with-deps chromium
 
-      - name: Run HCPI master runner
+      - name: Run pipeline
         env:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
         run: |
-          python master_runner.py --cron --db sqlite:///hcpi.db
+          set -euo pipefail
+          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" --quiet
 
       - name: Prepare static site
         run: |
-          mkdir -p public/hcpi
-          mkdir -p public/data/derived
-          cp docs/index.html public/index.html || true
-          cp -r data/derived/*.csv public/data/derived/ || true
-          cp -r hcpi/*.json public/hcpi/ || true
-          echo '{"status":"ok","timestamp":"'$(date -u +%FT%TZ)'"}' > public/health.json
+          set -euo pipefail
+          mkdir -p public public/data/derived public/hcpi
+          if [ -f docs/index.html ]; then
+            cp -f docs/index.html public/index.html
+          elif [ -f index.html ]; then
+            cp -f index.html public/index.html
+          else
+            cat > public/index.html <<'HTML'
+<!doctype html><meta charset="utf-8"><title>Dashboard</title>
+<body style="font:14px system-ui;padding:24px"><h1>Dashboard placeholder</h1><p>Add <code>docs/index.html</code> or <code>index.html</code> to your repo.</p></body>
+HTML
+          fi
+          cp -f data/derived/*.csv public/data/derived/ 2>/dev/null || true
+          cp -f hcpi/*.json        public/hcpi/          2>/dev/null || true
+          echo "==== public tree ====" && find public -maxdepth 3 -type f -print
 
-      - name: Upload Pages artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: public
 
   deploy:
-    needs: build-and-deploy
-    permissions:
-      pages: write
-      id-token: write
+    needs: build-and-bundle
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
-      - id: deployment
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
 
