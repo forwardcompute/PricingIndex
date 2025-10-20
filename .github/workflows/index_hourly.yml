@@ -1,4 +1,4 @@
-name: Price-IQ / HCPI — Hourly
+name: Price-IQ / HCPI - Hourly
 
 on:
   schedule:
@@ -11,7 +11,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "github-pages"
+  group: github-pages
   cancel-in-progress: false
 
 jobs:
@@ -47,14 +47,12 @@ jobs:
           elif [ -f index.html ]; then
             cp -f index.html public/index.html
           else
-            cat > public/index.html <<'HTML'
-<!doctype html><meta charset="utf-8"><title>Dashboard</title>
-<body style="font:14px system-ui;padding:24px"><h1>Dashboard placeholder</h1><p>Add <code>docs/index.html</code> or <code>index.html</code> to your repo.</p></body>
-HTML
+            printf '%s\n' '<!doctype html><meta charset="utf-8"><title>Dashboard</title><body style="font:14px system-ui;padding:24px"><h1>Dashboard placeholder</h1><p>Add <code>docs/index.html</code> or <code>index.html</code> to your repo.</p></body>' > public/index.html
           fi
           cp -f data/derived/*.csv public/data/derived/ 2>/dev/null || true
           cp -f hcpi/*.json        public/hcpi/          2>/dev/null || true
-          echo "==== public tree ====" && find public -maxdepth 3 -type f -print
+          echo "==== public tree ===="
+          find public -maxdepth 3 -type f -print
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -64,10 +62,14 @@ HTML
   deploy:
     needs: build-and-bundle
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
 
