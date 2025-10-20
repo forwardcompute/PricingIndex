@@ -18,8 +18,11 @@ button{cursor:pointer;background:var(--accent);color:#052535;font-weight:700;bor
 .center{text-align:center}
 .big{font-size:64px;line-height:1;font-weight:800;color:var(--accent);letter-spacing:1px}
 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ok);margin-right:6px}
-.kv{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.input-inline{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.input-inline > *{min-width:120px}
+.sublabel{font-size:12px;color:var(--sub);margin-top:4px}
 footer{margin-top:16px;color:var(--sub);font-size:12px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:#1e2634;border:1px solid #2c3143;border-radius:999px;padding:2px 10px;color:#bcd0e6;font-size:12px}
 </style>
 </head>
 <body>
@@ -53,17 +56,47 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
     <div id="updated" class="small" style="margin-top:4px">Updated: –</div>
   </div>
 
+  <!-- ===== TOTAL COST CALCULATOR (Improved) ===== -->
   <div class="card">
-    <h3 style="margin:0 0 8px">Total Cost Calculator</h3>
-    <div class="row">
-      <input id="price" class="select" type="number" step="0.01" placeholder="Price $/GPU-hr">
-      <input id="count" class="select" type="number" step="1" value="8" placeholder="GPU count">
-      <input id="hours" class="select" type="number" step="0.5" value="1" placeholder="Hours">
+    <div class="row" style="justify-content:space-between;align-items:flex-end">
+      <h3 style="margin:0">Total Cost Calculator</h3>
+      <span class="badge" id="calcSliceBadge">–</span>
+    </div>
+
+    <div class="input-inline" style="margin-top:8px">
+      <div style="min-width:220px">
+        <div class="small" style="margin-bottom:4px">Provider</div>
+        <input id="provInput" class="select" list="provList" placeholder="Type to search…">
+        <datalist id="provList"></datalist>
+      </div>
+
+      <div>
+        <div class="small" style="margin-bottom:4px">Price $/GPU-hr</div>
+        <input id="price" class="select" type="number" step="0.01" placeholder="e.g. 3.25">
+      </div>
+
+      <div>
+        <div class="small" style="margin-bottom:4px">GPU count</div>
+        <input id="count" class="select" type="number" step="1" value="8">
+      </div>
+
+      <div>
+        <div class="small" style="margin-bottom:4px">Duration</div>
+        <select id="duration" class="select">
+          <option>1 hour</option>
+          <option>1 day</option>
+          <option>1 week</option>
+          <option>1 month</option>
+        </select>
+      </div>
+
       <button id="btnCost">Calculate</button>
     </div>
-    <div id="costOut" class="small" style="margin-top:8px">Total cost: $0.00 for 8 GPU × 0 hr × $0/hr</div>
+
+    <div id="calcSummary" class="sublabel" style="margin-top:8px">Set a provider or price to estimate cost.</div>
   </div>
 
+  <!-- ===== ROI ===== -->
   <div class="card">
     <h3 style="margin:0 0 8px">ROI Estimator</h3>
     <div class="row">
@@ -74,38 +107,73 @@ footer{margin-top:16px;color:var(--sub);font-size:12px}
     <div id="roiOut" class="small" style="margin-top:8px">ROI: –</div>
   </div>
 
-  <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code></footer>
+  <footer>Data sources: <code>hcpi/hcpi_dashboard.json</code>, <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
 
 <script>
+/* ---------- Utilities ---------- */
 const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
 const fmtUpdated = iso => {
   try{
     const d = new Date(iso);
-    return d.toLocaleString(undefined,{month:'short', day:'2-digit'}) + ', ' +
-           d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false, timeZoneName:'short'}).replace(':00 ',' ');
+    const date = d.toLocaleString(undefined,{month:'short', day:'2-digit'});
+    const time = d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false, timeZoneName:'short'});
+    return `${date}, ${time}`;
   }catch(e){ return iso||'–'; }
 };
+const durHours = s => {
+  s=String(s||'').toLowerCase();
+  if (s.includes('month')) return 24*30;
+  if (s.includes('week'))  return 24*7;
+  if (s.includes('day'))   return 24;
+  return 1;
+};
 
-let dash={}, full={};
+/* ---------- Category map (same groupings you use in index_calculator) ---------- */
+const PROVIDER_CATEGORY = {
+  "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
+  "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","Crusoe Cloud","RunPod","Paperspace","FluidStack","Nebius"]),
+  "Serverless":         new Set(["Together.ai","Replicate","Together .ai","Together .ai".replace(' .','')]),
+  "Specialized":        new Set(["Jarvislabs","Vast.ai","OVHcloud","OVH Cloud","Hyperstack","TensorDock","Voltage Park","Scaleway","Genesis Cloud","SF Compute"])
+};
 
-async function loadSources(){
-  // Both files exist thanks to master_runner.py
-  const [a,b] = await Promise.all([
-    fetch('hcpi/hcpi_dashboard.json').then(r=>r.json()).catch(()=>({})),
-    fetch('hcpi/hcpi_latest_full.json').then(r=>r.json()).catch(()=>({}))
-  ]);
-  dash=a; full=b;
+/* ---------- State ---------- */
+let dash={}, full={}, scores=[]; // dashboard JSON, full JSON, latest CSV rows
+
+/* ---------- Data loading ---------- */
+async function loadJSON(url){ try{ const r=await fetch(url); if(!r.ok) throw 0; return await r.json(); }catch{ return {}; } }
+async function loadCSV(url){
+  try{
+    const r = await fetch(url); if(!r.ok) return [];
+    const txt = await r.text();
+    const lines = txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
+    const header = lines.shift().split(',').map(h=>h.trim());
+    return lines.filter(Boolean).map(line=>{
+      const cells = line.split(','); const o={};
+      header.forEach((h,i)=> o[h]= (cells[i]??'').trim() );
+      // coerce a few
+      o.gpu_count = Number(o.gpu_count||o.gpus||0);
+      o.effective_price_usd_per_gpu_hr = Number(o.effective_price_usd_per_gpu_hr||o["$/GPU-hr"]||o.price||NaN);
+      return o;
+    });
+  }catch{ return []; }
 }
 
+async function loadSources(){
+  [dash, full, scores] = await Promise.all([
+    loadJSON('hcpi/hcpi_dashboard.json'),
+    loadJSON('hcpi/hcpi_latest_full.json'),
+    loadCSV('data/derived/provider_scores_latest.csv')
+  ]);
+}
+
+/* ---------- Index rendering ---------- */
 function currentValue(){
   const region = document.getElementById('region').value;
   const cat    = document.getElementById('category').value;
 
-  // Timestamp (prefer dashboard if available)
   const ts = (dash && dash.timestamp) || (full && full.metadata && full.metadata.timestamp) || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
 
-  // Category-specific per-region when possible
   if (cat !== 'All') {
     const cats = (full && full.category_indices) || {};
     const item = cats[cat] || {};
@@ -115,51 +183,117 @@ function currentValue(){
       const byReg = item.regional_indices || {};
       if (isFinite(byReg[region])) return byReg[region];
     }
-    // graceful fallback to US category index
     if (isFinite(item.category_index)) return item.category_index;
     return NaN;
   }
 
-  // No category filter -> use regional or US index from dashboard JSON
   if (region === 'US (All)') {
-    return dash && isFinite(dash.us_index) ? dash.us_index : (full && isFinite(full.us_index) ? full.us_index : NaN);
+    return dash && isFinite(dash.us_index) ? dash.us_index :
+           (full && isFinite(full.us_index) ? full.us_index : NaN);
   } else {
     if (dash && dash.regions && isFinite(dash.regions[region])) return dash.regions[region];
-    // fallback from full JSON (if present)
     const reg = full && full.regional_indices ? full.regional_indices[region] : undefined;
     return isFinite(reg) ? reg : NaN;
   }
 }
 
-function render(){
-  const val = currentValue();
-  document.getElementById('indexVal').textContent = fmtMoney(val);
+function renderIndex(){
+  document.getElementById('indexVal').textContent = fmtMoney(currentValue());
 }
 
+/* ---------- Provider list + auto pricing ---------- */
+function providerInCategory(name, cat){
+  if (cat==='All') return true;
+  const set = PROVIDER_CATEGORY[cat];
+  if (!set) return true;
+  // loose match
+  for (const v of set) { if (name && name.toLowerCase().includes(v.toLowerCase())) return true; }
+  return false;
+}
+
+function refreshProviderList(){
+  const region = document.getElementById('region').value;
+  const cat    = document.getElementById('category').value;
+  const dl = document.getElementById('provList');
+  const seen = new Set();
+  const provs = [];
+
+  scores.forEach(r=>{
+    const prov = r.provider || '';
+    const reg  = r.region || '';
+    if (!prov) return;
+    // filter region
+    if (region!=='US (All)' && reg !== region) return;
+    // filter category
+    if (!providerInCategory(prov, cat)) return;
+    if (!seen.has(prov)){ seen.add(prov); provs.push(prov); }
+  });
+
+  provs.sort((a,b)=>a.localeCompare(b));
+  dl.innerHTML = provs.map(p=>`<option value="${p}">`).join('');
+
+  // Badge
+  const badge = document.getElementById('calcSliceBadge');
+  badge.textContent = `${region} • ${cat}`;
+}
+
+function autoPriceFromProvider(){
+  const prov = document.getElementById('provInput').value.trim();
+  if (!prov){ return; }
+
+  const region = document.getElementById('region').value;
+  // rows for provider (prefer current region; fallback any region)
+  let rows = scores.filter(r => (r.provider||'').toLowerCase() === prov.toLowerCase());
+  if (!rows.length) return;
+
+  let rowsReg = region==='US (All)' ? rows : rows.filter(r=>r.region===region);
+  if (!rowsReg.length) rowsReg = rows; // fallback
+
+  // Prefer On-Demand & 1 hour if available
+  const pref = rowsReg.filter(r => String(r.type||'').toLowerCase().includes('on') && /1 ?h|1 ?hour/i.test(r.duration||''));
+  const pool = pref.length ? pref : rowsReg;
+
+  const prices = pool.map(r=>r.effective_price_usd_per_gpu_hr).filter(Number.isFinite).sort((a,b)=>a-b);
+  if (!prices.length) return;
+
+  const mid = prices[Math.floor(prices.length/2)];
+  document.getElementById('price').value = String(mid.toFixed(2));
+}
+
+/* ---------- Calculators ---------- */
 function calcCost(){
-  const p=Number(document.getElementById('price').value)||0;
-  const c=Number(document.getElementById('count').value)||0;
-  const h=Number(document.getElementById('hours').value)||0;
-  const t=p*c*h;
-  document.getElementById('costOut').textContent = `Total cost: ${fmtMoney(t)} for ${c} GPU × ${h} hr × ${fmtMoney(p).replace('$','$/')}/hr`;
+  const price = Number(document.getElementById('price').value)||0;
+  const count = Number(document.getElementById('count').value)||0;
+  const dur   = document.getElementById('duration').value;
+  const hrs   = durHours(dur);
+  const total = price * count * hrs;
+  document.getElementById('calcSummary').textContent =
+    `Total cost: ${fmtMoney(total)} — ${count} GPU × ${dur} × ${fmtMoney(price).replace('$','$/')}/hr`;
 }
 
 function calcROI(){
   const p=Number(document.getElementById('price').value)||0;
   const r=Number(document.getElementById('revenue').value)||0;
   const u=Number(document.getElementById('util').value)||0;
-  if(!(p>0) || !(r>0)){ document.getElementById('roiOut').textContent='ROI: enter price & revenue'; return; }
+  const out=document.getElementById('roiOut');
+  if(!(p>0) || !(r>0)){ out.textContent='ROI: enter price & revenue'; return; }
   const roi=((r*u - p)/p)*100;
-  document.getElementById('roiOut').textContent = `ROI: ${roi.toFixed(1)}% at ${(u*100).toFixed(0)}% utilisation`;
+  out.textContent = `ROI: ${roi.toFixed(1)}% at ${(u*100).toFixed(0)}% utilisation`;
 }
 
+/* ---------- Boot ---------- */
 async function boot(){
   await loadSources();
-  render();
-  // auto-update when filters change
-  document.getElementById('region').addEventListener('change', render);
-  document.getElementById('category').addEventListener('change', render);
-  document.getElementById('btnRefresh').addEventListener('click', render);
+  renderIndex();
+  refreshProviderList();
+
+  // index updates
+  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); refreshProviderList(); });
+  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); refreshProviderList(); });
+  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); refreshProviderList(); });
+
+  // calculator
+  document.getElementById('provInput').addEventListener('change', ()=>{ autoPriceFromProvider(); calcCost(); });
   document.getElementById('btnCost').addEventListener('click', calcCost);
   document.getElementById('btnROI').addEventListener('click', calcROI);
 }
@@ -167,6 +301,7 @@ boot();
 </script>
 </body>
 </html>
+
 
 
 
