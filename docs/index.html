@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="en">
 <head>
@@ -275,14 +274,26 @@ async function loadCSV(url){
     const txt = await r.text();
     const lines = txt.replace(/^\uFEFF/,'').trim().split(/\r?\n/);
     const header = lines.shift().split(',').map(h=>h.trim());
-    return lines.filter(Boolean).map(line=>{
+    
+    console.log('CSV Headers:', header);
+    
+    const rows = lines.filter(Boolean).map(line=>{
       const cells = line.split(','); const o={};
       header.forEach((h,i)=> o[h]= (cells[i]??'').trim() );
       o.gpu_count = Number(o.gpu_count||o.gpus||0);
       o.effective_price_usd_per_gpu_hr = Number(o.effective_price_usd_per_gpu_hr||o["$/GPU-hr"]||o.price||NaN);
       return o;
     });
-  }catch{ return []; }
+    
+    console.log('Total CSV rows loaded:', rows.length);
+    console.log('Sample row:', rows[0]);
+    console.log('Unique providers:', [...new Set(rows.map(r => r.provider))].length);
+    
+    return rows;
+  }catch(e){ 
+    console.error('CSV load error:', e);
+    return []; 
+  }
 }
 
 async function loadAll(){
