@@ -293,80 +293,40 @@ async function loadCSV(url){
     const r = await fetch(url + '?t=' + Date.now()); 
     if(!r.ok) return [];
     const txt = await r.text();
-    
-    // Split lines and remove BOM if present
     const lines = txt.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(l => l);
     if (!lines.length) return [];
-    
-    // Parse CSV line respecting quoted fields
     const parseCSVLine = (line) => {
-      const result = [];
-      let current = '';
-      let inQuotes = false;
-      
+      const result = []; let current = ''; let inQuotes = false;
       for (let i = 0; i < line.length; i++) {
         const char = line[i];
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          result.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
+        if (char === '"') inQuotes = !inQuotes;
+        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
+        else current += char;
       }
-      result.push(current.trim());
-      return result;
+      result.push(current.trim()); return result;
     };
-    
     const header = parseCSVLine(lines[0]);
-    console.log('CSV Headers:', header);
-    console.log('Total lines in CSV:', lines.length);
-    
-    const rows = [];
-    const skipped = [];
-    
+    const rows = []; const skipped = [];
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
-      
+      const line = lines[i]; if (!line) continue;
       try {
-        const cells = parseCSVLine(line);
-        const obj = {};
-        header.forEach((h, idx) => {
-          obj[h] = (cells[idx] || '').replace(/^"|"$/g, '').trim();
-        });
-        
+        const cells = parseCSVLine(line); const obj = {};
+        header.forEach((h, idx) => { obj[h] = (cells[idx] || '').replace(/^"|"$/g, '').trim(); });
         obj.provider = (obj.provider || '').trim();
         obj.region = (obj.region || '').trim();
-        
-        // Parse price - handle any format
         const priceStr = (obj.effective_price_usd_per_gpu_hr || '').trim();
         obj.effective_price_usd_per_gpu_hr = parseFloat(priceStr);
-        
-        // Only include if we have valid provider and price
         if (obj.provider && isFinite(obj.effective_price_usd_per_gpu_hr) && obj.effective_price_usd_per_gpu_hr > 0) {
           rows.push(obj);
         } else {
           skipped.push({line: i+1, provider: obj.provider, price: priceStr, reason: !obj.provider ? 'no provider' : 'invalid price'});
         }
       } catch (e) {
-        console.error('Failed to parse line', i+1, ':', e);
         skipped.push({line: i+1, reason: 'parse error'});
       }
     }
-    
-    console.log('Loaded rows:', rows.length);
-    console.log('Skipped rows:', skipped);
-    const uniqueProviders = [...new Set(rows.map(r=>r.provider))].sort();
-    console.log('Unique providers:', uniqueProviders);
-    console.log('Provider count:', uniqueProviders.length);
-    
     return rows;
-  }catch(e){ 
-    console.error('CSV load error:', e);
-    return []; 
-  }
+  }catch(e){ return []; }
 }
 
 async function loadAll(){
@@ -375,7 +335,7 @@ async function loadAll(){
     loadCSV('data/derived/provider_scores_latest.csv')
   ]);
   
-  // Calculate average price per provider across all regions
+  // Average price per provider across all regions from CSV
   const providerMap = new Map();
   scores.forEach(r=>{
     const prov = r.provider;
@@ -397,8 +357,10 @@ function currentIndex(){
   const ts = (full && full.metadata && full.metadata.timestamp) || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
   
-  // Update provider count
-  const uniqueCount = new Set(scores.map(r=>r.provider)).size;
+  // Prefer clean count from metadata; fallback to CSV-based unique count
+  const metaCount = full?.metadata?.unique_providers;
+  const fallbackCount = new Set(scores.map(r=>r.provider)).size;
+  const uniqueCount = isFinite(metaCount) ? metaCount : fallbackCount;
   document.getElementById('providerCount').textContent = `${uniqueCount} providers tracked`;
   
   if (cat !== 'All') {
@@ -424,7 +386,6 @@ function renderIndex(){
 }
 
 function renderLeaderboards(){
-  // Category leaders
   const categories = ["Big 3 Hyperscalers", "Major GPU Clouds", "Serverless", "Specialized"];
   const categoryHTML = categories.map(cat=>{
     const inCat = allProviders.filter(p=>p.category===cat);
@@ -443,7 +404,6 @@ function renderLeaderboards(){
   }).join('');
   document.getElementById('categoryLeaderboard').innerHTML = categoryHTML || '<div class="small">No data</div>';
   
-  // Overall top 5
   const top5 = allProviders.slice(0,5);
   const overallHTML = top5.map((p,i)=>{
     const rankClass = i===0 ? 'gold' : i===1 ? 'silver' : i===2 ? 'bronze' : '';
@@ -466,24 +426,23 @@ function useProvider(name, price){
   sel.value = name;
   calculateCost();
   calculateProfit();
-  // Smooth scroll to calculator
   document.getElementById('providerSelect').scrollIntoView({behavior: 'smooth', block: 'center'});
 }
-
 window.useProvider = useProvider;
 
 function renderInsights(){
-  if (!allProviders.length) return;
-  
+  const box = document.getElementById('insights');
+  if (!allProviders || allProviders.length === 0) {
+    box.innerHTML = '<div class="small">No provider pricing available yet.</div>';
+    return;
+  }
   const cheapest = allProviders[0];
   const mostExpensive = allProviders[allProviders.length - 1];
   const avgPrice = allProviders.reduce((sum, p) => sum + p.avgPrice, 0) / allProviders.length;
   const spread = mostExpensive.avgPrice - cheapest.avgPrice;
   const spreadPct = ((spread / mostExpensive.avgPrice) * 100).toFixed(0);
-  
-  // Find best value in popular category
   const majorGPU = allProviders.filter(p => p.category === "Major GPU Clouds").sort((a,b) => a.avgPrice - b.avgPrice)[0];
-  
+
   const insights = [
     {
       icon: '⚡',
@@ -510,8 +469,7 @@ function renderInsights(){
       subtext: `vs market average`
     }
   ];
-  
-  const html = insights.map(i => `
+  box.innerHTML = insights.map(i => `
     <div class="insight-card">
       <div class="insight-icon">${i.icon}</div>
       <div class="insight-content">
@@ -522,8 +480,6 @@ function renderInsights(){
       </div>
     </div>
   `).join('');
-  
-  document.getElementById('insights').innerHTML = html;
 }
 
 function renderProviderDropdown(){
@@ -542,19 +498,16 @@ function calculateCost(){
     document.getElementById('costTotal').textContent = '–';
     return null;
   }
-  
   const price = parseFloat(selectedOption.dataset.price);
   const count = Number(document.getElementById('count').value) || 0;
   const dur = document.getElementById('duration').value;
   const hrs = hoursOf(dur);
   const gpuHours = count * hrs;
   const totalCost = price * gpuHours;
-  
   document.getElementById('costPrice').textContent = fmtMoney(price) + '/hr';
   document.getElementById('costHours').textContent = fmtNum(hrs) + ' hrs';
   document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
   document.getElementById('costTotal').textContent = fmtMoney(totalCost);
-  
   return {price, totalCost, gpuHours};
 }
 
@@ -568,23 +521,18 @@ function calculateProfit(){
     document.getElementById('profitTotal').textContent = '–';
     return;
   }
-  
   const sellingPrice = Number(document.getElementById('sellingPrice').value) || 0;
   const profitPerHour = sellingPrice - costData.price;
   const totalProfit = profitPerHour * costData.gpuHours;
   const margin = sellingPrice > 0 ? (profitPerHour / sellingPrice) * 100 : 0;
-  
   document.getElementById('profitCost').textContent = fmtMoney(costData.price) + '/hr';
   document.getElementById('profitSelling').textContent = fmtMoney(sellingPrice) + '/hr';
-  
   const perHourEl = document.getElementById('profitPerHour');
   perHourEl.textContent = fmtMoney(profitPerHour) + '/hr';
   perHourEl.className = 'metric-value ' + (profitPerHour >= 0 ? 'positive' : 'negative');
-  
   const marginEl = document.getElementById('profitMargin');
   marginEl.textContent = margin.toFixed(1) + '%';
   marginEl.className = 'metric-value ' + (margin >= 0 ? 'positive' : 'negative');
-  
   const totalEl = document.getElementById('profitTotal');
   totalEl.textContent = fmtMoney(totalProfit);
   totalEl.className = 'result-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
@@ -597,13 +545,11 @@ function calculateWorkload(){
   if (unit.includes('days')) gpuHours *= 24;
   if (unit.includes('weeks')) gpuHours *= 24 * 7;
   if (gpuHours <= 0) { document.getElementById('workloadResults').style.display = 'none'; return; }
-  
   const results = allProviders.map(p => ({
     name: p.name,
     pricePerHr: p.avgPrice,
     totalCost: p.avgPrice * gpuHours
   })).sort((a,b)=>a.totalCost-b.totalCost);
-  
   const cheapest = results[0].totalCost;
   const tbody = document.getElementById('workloadTableBody');
   tbody.innerHTML = results.map((r,i)=>{
@@ -617,7 +563,6 @@ function calculateWorkload(){
         <td style="padding:8px;text-align:right;color:${isCheapest?'var(--ok)': diff>cheapest*0.5?'#ff6b6b':'var(--warn)'}">${isCheapest?'Cheapest':'+'+fmtMoney(diff)+' (+'+diffPct.toFixed(0)+'%)'}</td>
       </tr>`;
   }).join('');
-  
   document.getElementById('workloadResults').style.display = 'block';
 }
 
@@ -625,21 +570,10 @@ function setupListeners(){
   document.getElementById('region').addEventListener('change', renderIndex);
   document.getElementById('category').addEventListener('change', renderIndex);
   document.getElementById('btnRefresh').addEventListener('click', renderIndex);
-  
-  document.getElementById('providerSelect').addEventListener('change', ()=>{
-    calculateCost();
-    calculateProfit();
-  });
-  document.getElementById('count').addEventListener('input', ()=>{
-    calculateCost();
-    calculateProfit();
-  });
-  document.getElementById('duration').addEventListener('change', ()=>{
-    calculateCost();
-    calculateProfit();
-  });
+  document.getElementById('providerSelect').addEventListener('change', ()=>{ calculateCost(); calculateProfit(); });
+  document.getElementById('count').addEventListener('input', ()=>{ calculateCost(); calculateProfit(); });
+  document.getElementById('duration').addEventListener('change', ()=>{ calculateCost(); calculateProfit(); });
   document.getElementById('sellingPrice').addEventListener('input', calculateProfit);
-  
   document.getElementById('btnWorkload').addEventListener('click', calculateWorkload);
   document.getElementById('workloadGPUHours').addEventListener('input', calculateWorkload);
   document.getElementById('workloadUnit').addEventListener('change', calculateWorkload);
@@ -650,10 +584,12 @@ async function boot(){
   renderIndex();
   renderLeaderboards();
   renderProviderDropdown();
+  renderInsights();          // ← ensures Smart Insights populates
   setupListeners();
 }
 boot();
 </script>
 </body>
-</html> 
+</html>
+
 
