@@ -42,6 +42,20 @@ jobs:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
         run: |
           python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" || echo "Scraping had issues, continuing"
+          sleep 2
+      
+      - name: Verify generated data
+        run: |
+          echo "==== Verifying CSV BEFORE copy ===="
+          if [ -f data/derived/provider_scores_latest.csv ]; then
+            wc -l data/derived/provider_scores_latest.csv
+            echo "First 5 rows:"
+            head -5 data/derived/provider_scores_latest.csv
+            echo "Last 5 rows:"
+            tail -5 data/derived/provider_scores_latest.csv
+          else
+            echo "ERROR: CSV file not found!"
+          fi
           
       - name: Commit generated data to repository
         if: env.COMMIT_DATA == 'true'
@@ -58,28 +72,52 @@ jobs:
           
       - name: Prepare static site (public/)
         run: |
-          mkdir -p public public/data/derived public/data/history public/hcpi
+          set -e
+          mkdir -p public/data/derived public/data/history public/hcpi
           
+          echo "==== Copying HTML ===="
           if [ -f docs/index.html ]; then
-            cp -f docs/index.html public/index.html
+            cp -v docs/index.html public/index.html
           elif [ -f index.html ]; then
-            cp -f index.html public/index.html
+            cp -v index.html public/index.html
           else
             echo '<!doctype html><meta charset="utf-8"><title>Forward Compute Index</title><body style="font:14px system-ui;padding:24px;color:#e7edf3;background:#0f1216"><h1>Forward Compute Index</h1><p>No dashboard found. Add <code>docs/index.html</code> to the repo.</p></body>' > public/index.html
           fi
           
-          # Copy files with verification
-          cp -v data/derived/*.csv public/data/derived/ || true
-          cp -v data/history/*.csv public/data/history/ || true
-          cp -v hcpi/*.json public/hcpi/ || true
-          cp -v hcpi/*history*.csv public/hcpi/ || true
+          echo "==== Copying data files ===="
+          if [ -f data/derived/provider_scores_latest.csv ]; then
+            cp -v data/derived/provider_scores_latest.csv public/data/derived/provider_scores_latest.csv
+          fi
           
-          echo "==== Verifying CSV line count ===="
-          wc -l data/derived/provider_scores_latest.csv
-          wc -l public/data/derived/provider_scores_latest.csv
+          cp -v data/derived/*.csv public/data/derived/ 2>/dev/null || true
+          cp -v data/history/*.csv public/data/history/ 2>/dev/null || true
+          cp -v hcpi/*.json public/hcpi/ 2>/dev/null || true
+          cp -v hcpi/*history*.csv public/hcpi/ 2>/dev/null || true
+          
+          echo "==== Verifying CSV AFTER copy ===="
+          if [ -f data/derived/provider_scores_latest.csv ]; then
+            echo "Source CSV:"
+            wc -l data/derived/provider_scores_latest.csv
+          fi
+          
+          if [ -f public/data/derived/provider_scores_latest.csv ]; then
+            echo "Destination CSV:"
+            wc -l public/data/derived/provider_scores_latest.csv
+            echo "First 3 rows:"
+            head -3 public/data/derived/provider_scores_latest.csv
+            echo "Last 3 rows:"
+            tail -3 public/data/derived/provider_scores_latest.csv
+          else
+            echo "ERROR: CSV not copied to public!"
+          fi
           
           echo "==== public/ tree ===="
-          find public -maxdepth 3 -type f -print
+          find public -type f -print
+          
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
 
   deploy:
     needs: build-and-bundle
