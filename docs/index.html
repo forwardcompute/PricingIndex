@@ -30,7 +30,6 @@ button:hover{opacity:.85}
 .field label{color:var(--sub);font-size:13px;font-weight:500}
 .result-box{background:var(--muted);border:1px solid #2c3240;border-radius:8px;padding:14px;margin-top:12px}
 .result-value{font-size:24px;font-weight:700;color:var(--accent)}
-footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2c3240}
 .metric:last-child{border:none}
 .metric-label{color:var(--sub)}
@@ -50,6 +49,7 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .insight-content{flex:1}
 .insight-label{font-size:11px;color:var(--sub);margin-bottom:2px}
 .insight-value{font-size:16px;font-weight:600;color:var(--text)}
+footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 </style>
 </head>
 <body>
@@ -156,11 +156,11 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       </div>
     </div>
 
-    <!-- ROI (automatic, vs market average) -->
+    <!-- ROI (value per dollar = 1 / price) -->
     <div class="card">
-      <h3>ROI (vs Market Average)</h3>
+      <h3>ROI (Value per Dollar)</h3>
       <div class="small" style="margin-bottom:12px">
-        Automatically compares your selected provider with the market average price across providers.
+        ROI = <code>1 / price_per_gpu_hour</code> → GPU-hours per $1 (higher is better).
       </div>
 
       <div class="result-box">
@@ -169,16 +169,16 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
           <span class="metric-value" id="roiProviderPrice">–</span>
         </div>
         <div class="metric">
-          <span class="metric-label">Market average price</span>
-          <span class="metric-value" id="roiMarketAvg">–</span>
+          <span class="metric-label">ROI (GPU-hrs per $)</span>
+          <span class="metric-value" id="roiBasic">–</span>
         </div>
         <div class="metric">
-          <span class="metric-label">ROI (%)</span>
-          <span class="metric-value" id="roiPercent">–</span>
+          <span class="metric-label">Rank vs all providers</span>
+          <span class="metric-value" id="roiRank">–</span>
         </div>
-        <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
-          <span class="metric-label" style="font-size:15px;font-weight:600">Savings ($) for selected workload</span>
-          <span class="result-value" id="roiSavings">–</span>
+        <div class="metric" id="roiUtilRow" style="display:none">
+          <span class="metric-label">Utilisation-adjusted ROI</span>
+          <span class="metric-value" id="roiUtil">–</span>
         </div>
       </div>
     </div>
@@ -242,7 +242,7 @@ async function loadCSV(url){
     const txt=await r.text();
     const lines=txt.replace(/^\uFEFF/,'').split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
     if(!lines.length) return [];
-    const parseLine = (line) => { const out=[]; let cur=''; let q=false; for (let i=0;i<line.length;i++){ const c=line[i]; if(c==='"'){q=!q;} else if(c===',' && !q){out.push(cur.trim());cur='';} else {cur+=c;} } out.push(cur.trim()); return out; };
+    const parseLine=(line)=>{const out=[];let cur='';let q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){q=!q;}else if(c===','&&!q){out.push(cur.trim());cur='';}else{cur+=c;}}out.push(cur.trim());return out;};
     const header=parseLine(lines[0]);
     const rows=[];
     for(let i=1;i<lines.length;i++){
@@ -272,7 +272,7 @@ async function loadAll(){
   });
   allProviders = Array.from(map.entries()).map(([name,prices])=>{
     const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
-    return {name, avgPrice: avg};
+    return {name, avgPrice: avg, category: getCategory(name)};
   }).sort((a,b)=>a.avgPrice-b.avgPrice);
 
   // Market average across providers
@@ -280,7 +280,7 @@ async function loadAll(){
   marketAvg = allPrices.length ? (allPrices.reduce((a,b)=>a+b,0) / allPrices.length) : NaN;
 }
 
-// ========= Categories (for leaderboards) =========
+// ========= Categories (for leaderboards/labels) =========
 const PROVIDER_CATEGORY = {
   "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
   "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","RunPod","Paperspace","FluidStack","Nebius"]),
@@ -307,7 +307,6 @@ function currentIndex(){
   const reg = full.regional_indices ? full.regional_indices[region] : undefined;
   return isFinite(reg) ? reg : NaN;
 }
-
 function renderIndex(){
   const val = currentIndex();
   document.getElementById('indexVal').textContent = isFinite(val) ? fmtMoney(val) : '–';
@@ -316,10 +315,10 @@ function renderIndex(){
 // ========= Smart Insights =========
 function renderInsights(){
   const box = document.getElementById('insights');
-  if (!allProviders || allProviders.length === 0) { box.innerHTML = '<div class="small">No provider pricing available yet.</div>'; return; }
+  if (!allProviders.length) { box.innerHTML = '<div class="small">No provider pricing available yet.</div>'; return; }
   const cheapest = allProviders[0];
   const avgPrice = marketAvg;
-  const majorGPU = allProviders.find(p => /coreweave|lambda|crusoe|runpod|paperspace|fluidstack|nebius/i.test(p.name)) || null;
+  const majorGPU = allProviders.filter(p=>getCategory(p.name)==="Major GPU Clouds").sort((a,b)=>a.avgPrice-b.avgPrice)[0];
 
   const insights = [
     { icon:'⚡', label:'Cheapest Provider', value:`${cheapest.name} • ${fmtMoney(cheapest.avgPrice)}/hr` },
@@ -375,11 +374,11 @@ function renderLeaderboards(){
   }).join('');
   document.getElementById('overallLeaderboard').innerHTML = overallHTML || '<div class="small">No data</div>';
 }
-
 function useProvider(name, price){
   const sel = document.getElementById('providerSelect');
   sel.value = name;
-  calculateCost();   // will also trigger ROI
+  calculateCost();
+  calculateROI();
   document.getElementById('providerSelect').scrollIntoView({behavior:'smooth', block:'center'});
 }
 window.useProvider = useProvider;
@@ -390,7 +389,6 @@ function renderProviderDropdown(){
   sel.innerHTML = '<option value="">Select a provider</option>' + 
     allProviders.map(p=>`<option value="${p.name}" data-price="${p.avgPrice}">${p.name} - ${fmtMoney(p.avgPrice)}/hr</option>`).join('');
 }
-
 function calculateCost(){
   const sel = document.getElementById('providerSelect');
   const selectedOption = sel.options[sel.selectedIndex];
@@ -399,13 +397,11 @@ function calculateCost(){
     document.getElementById('costHours').textContent = '–';
     document.getElementById('costGPUHours').textContent = '–';
     document.getElementById('costTotal').textContent = '–';
-    calculateROI(); // refresh ROI anyway (will show prompts)
     return null;
   }
   const price = parseFloat(selectedOption.dataset.price);
   const count = Number(document.getElementById('count').value) || 0;
-  const dur = document.getElementById('duration').value;
-  const hrs = hoursOf(dur);
+  const hrs = hoursOf(document.getElementById('duration').value);
   const gpuHours = count * hrs;
   const totalCost = price * gpuHours;
 
@@ -413,45 +409,52 @@ function calculateCost(){
   document.getElementById('costHours').textContent = fmtNum(hrs) + ' hrs';
   document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
   document.getElementById('costTotal').textContent = fmtMoney(totalCost);
-
-  calculateROI(); // keep ROI in sync
   return {price, totalCost, gpuHours};
 }
 
-// ========= ROI: vs Market Average =========
+// ========= ROI (1 / price) =========
+function roiValuePerDollar(pricePerHr){
+  return (isFinite(pricePerHr) && pricePerHr > 0) ? (1 / pricePerHr) : NaN;
+}
 function calculateROI(){
   const sel = document.getElementById('providerSelect');
   const opt = sel.options[sel.selectedIndex];
-  const providerPrice = opt && opt.value ? parseFloat(opt.dataset.price) : NaN;
-  const count = Number(document.getElementById('count').value) || 0;
-  const hrs = hoursOf(document.getElementById('duration').value);
-  const gpuHours = count * hrs;
 
+  const price = opt && opt.value ? parseFloat(opt.dataset.price) : NaN;
   const providerEl = document.getElementById('roiProviderPrice');
-  const avgEl = document.getElementById('roiMarketAvg');
-  const pctEl = document.getElementById('roiPercent');
-  const savEl = document.getElementById('roiSavings');
+  const roiEl      = document.getElementById('roiBasic');
+  const rankEl     = document.getElementById('roiRank');
 
-  providerEl.textContent = isFinite(providerPrice) ? fmtMoney(providerPrice) + '/hr' : '–';
-  avgEl.textContent = isFinite(marketAvg) ? fmtMoney(marketAvg) + '/hr' : '–';
+  // utilisation row is dormant unless you later add it
+  const utilRow = document.getElementById('roiUtilRow');
+  utilRow.style.display = 'none';
 
-  if (!isFinite(providerPrice) || !isFinite(marketAvg)) {
-    pctEl.textContent = '–';
-    pctEl.className = 'metric-value';
-    savEl.textContent = '–';
-    savEl.className = 'result-value';
+  providerEl.textContent = isFinite(price) ? fmtMoney(price) + '/hr' : '–';
+
+  if (!isFinite(price)) {
+    roiEl.textContent = '–';
+    rankEl.textContent = '–';
     return;
   }
 
-  const diff = marketAvg - providerPrice;               // $/hr
-  const roiPct = (diff / providerPrice) * 100;          // %
-  const savings = diff * gpuHours;                      // $
+  // Basic ROI = 1 / price
+  const roi = roiValuePerDollar(price);
+  roiEl.textContent = isFinite(roi) ? roi.toFixed(3) : '–';
+  roiEl.className = 'metric-value ' + (roi > 0 ? 'positive' : '');
 
-  pctEl.textContent = roiPct.toFixed(1) + '%';
-  pctEl.className = 'metric-value ' + (roiPct >= 0 ? 'positive' : 'negative');
+  // Rank vs all providers (higher ROI is better)
+  const roiList = allProviders
+    .map(p => ({ name: p.name, roi: roiValuePerDollar(p.avgPrice) }))
+    .filter(x => isFinite(x.roi))
+    .sort((a,b)=> b.roi - a.roi);
 
-  savEl.textContent = fmtMoney(savings);
-  savEl.className = 'result-value ' + (savings >= 0 ? 'positive' : 'negative');
+  const idx = roiList.findIndex(x => x.name === opt.value);
+  if (idx >= 0 && roiList.length > 0) {
+    const percentile = ((roiList.length - idx) / roiList.length) * 100;
+    rankEl.textContent = `Top ${percentile.toFixed(0)}%`;
+  } else {
+    rankEl.textContent = '–';
+  }
 }
 
 // ========= Workload Estimator =========
@@ -492,7 +495,7 @@ function setupListeners(){
   document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); });
   document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); });
 
-  document.getElementById('providerSelect').addEventListener('change', ()=>{ calculateCost(); });
+  document.getElementById('providerSelect').addEventListener('change', ()=>{ calculateCost(); calculateROI(); });
   document.getElementById('count').addEventListener('input', ()=>{ calculateCost(); });
   document.getElementById('duration').addEventListener('change', ()=>{ calculateCost(); });
 
@@ -508,12 +511,10 @@ async function boot(){
   renderLeaderboards();
   renderProviderDropdown();
   setupListeners();
-  calculateROI(); // initial state
+  calculateROI(); // initial paint
 }
 boot();
 </script>
 </body>
 </html>
-
-
 
