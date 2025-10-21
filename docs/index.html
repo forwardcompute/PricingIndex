@@ -280,7 +280,9 @@ async function loadCSV(url){
     const r = await fetch(url + '?t=' + Date.now()); 
     if(!r.ok) return [];
     const txt = await r.text();
-    const lines = txt.split(/\r?\n/);
+    
+    // Split lines and remove BOM if present
+    const lines = txt.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(l => l);
     if (!lines.length) return [];
     
     // Parse CSV line respecting quoted fields
@@ -306,28 +308,46 @@ async function loadCSV(url){
     
     const header = parseCSVLine(lines[0]);
     console.log('CSV Headers:', header);
+    console.log('Total lines in CSV:', lines.length);
     
     const rows = [];
+    const skipped = [];
+    
     for (let i = 1; i < lines.length; i++) {
-      const line = lines[i].trim();
+      const line = lines[i];
       if (!line) continue;
       
-      const cells = parseCSVLine(line);
-      const obj = {};
-      header.forEach((h, idx) => obj[h] = (cells[idx] || '').trim());
-      
-      obj.provider = (obj.provider || '').trim();
-      obj.region = (obj.region || '').trim();
-      obj.effective_price_usd_per_gpu_hr = parseFloat(obj.effective_price_usd_per_gpu_hr);
-      
-      if (obj.provider && isFinite(obj.effective_price_usd_per_gpu_hr) && obj.effective_price_usd_per_gpu_hr > 0) {
-        rows.push(obj);
+      try {
+        const cells = parseCSVLine(line);
+        const obj = {};
+        header.forEach((h, idx) => {
+          obj[h] = (cells[idx] || '').replace(/^"|"$/g, '').trim();
+        });
+        
+        obj.provider = (obj.provider || '').trim();
+        obj.region = (obj.region || '').trim();
+        
+        // Parse price - handle any format
+        const priceStr = (obj.effective_price_usd_per_gpu_hr || '').trim();
+        obj.effective_price_usd_per_gpu_hr = parseFloat(priceStr);
+        
+        // Only include if we have valid provider and price
+        if (obj.provider && isFinite(obj.effective_price_usd_per_gpu_hr) && obj.effective_price_usd_per_gpu_hr > 0) {
+          rows.push(obj);
+        } else {
+          skipped.push({line: i+1, provider: obj.provider, price: priceStr, reason: !obj.provider ? 'no provider' : 'invalid price'});
+        }
+      } catch (e) {
+        console.error('Failed to parse line', i+1, ':', e);
+        skipped.push({line: i+1, reason: 'parse error'});
       }
     }
     
     console.log('Loaded rows:', rows.length);
-    console.log('Unique providers:', [...new Set(rows.map(r=>r.provider))]);
-    console.log('Provider count:', new Set(rows.map(r=>r.provider)).size);
+    console.log('Skipped rows:', skipped);
+    const uniqueProviders = [...new Set(rows.map(r=>r.provider))].sort();
+    console.log('Unique providers:', uniqueProviders);
+    console.log('Provider count:', uniqueProviders.length);
     
     return rows;
   }catch(e){ 
