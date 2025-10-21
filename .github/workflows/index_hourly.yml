@@ -10,248 +10,86 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: "forward-compute-index"
+  cancel-in-progress: true
+
 env:
   PYTHON_VERSION: "3.12"
-  COMMIT_DATA: "false"
+  COMMIT_DATA: "true"  
 
-# ──────────────────────────────────────────────────────────────────────────────
-# 1) SCRAPE: run one job per provider in parallel every hour
-# ──────────────────────────────────────────────────────────────────────────────
 jobs:
-  scrape:
-    name: Scrape ${{ matrix.provider_name }}
+  build-and-bundle:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Map UI name -> internal id your scraper expects
-          - provider_name: AWS              ; provider_id: aws
-          - provider_name: GCP              ; provider_id: gcp
-          - provider_name: Azure            ; provider_id: azure
-          - provider_name: CoreWeave        ; provider_id: coreweave
-          - provider_name: Lambda Labs      ; provider_id: lambda_labs
-          - provider_name: Crusoe           ; provider_id: crusoe
-          - provider_name: RunPod           ; provider_id: runpod
-          - provider_name: Paperspace       ; provider_id: paperspace
-          - provider_name: FluidStack       ; provider_id: fluidstack
-          - provider_name: Nebius           ; provider_id: nebius
-          - provider_name: Together.ai      ; provider_id: together
-          - provider_name: Replicate        ; provider_id: replicate
-          - provider_name: Jarvislabs       ; provider_id: jarvislabs
-          - provider_name: Vast.ai          ; provider_id: vast_ai
-          - provider_name: OVHcloud         ; provider_id: ovhcloud
-          - provider_name: Hyperstack       ; provider_id: hyperstack
-          - provider_name: TensorDock       ; provider_id: tensordock
-          - provider_name: Voltage Park     ; provider_id: voltage_park
-          - provider_name: Scaleway         ; provider_id: scaleway
-          - provider_name: Genesis Cloud    ; provider_id: genesis_cloud
-          - provider_name: SF Compute       ; provider_id: sf_compute
-
-    concurrency:
-      # cancel older in-progress run for the *same provider* only
-      group: forward-compute-index-${{ matrix.provider_id }}
-      cancel-in-progress: true
+    timeout-minutes: 40
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name:  Setup Python ${{ env.PYTHON_VERSION }}
+      - name:  Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
+          cache: "pip"
 
       - name:  Install dependencies
         run: |
           set -e
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps
+          playwright install chromium || true
+          playwright install-deps || true
 
-      - name:  Scrape ${{ matrix.provider_name }}
+      - name:  Run hourly scrape + index (master runner)
         env:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
           LAMBDA_API_KEY:    ${{ secrets.LAMBDA_API_KEY }}
           RUNPOD_API_KEY:    ${{ secrets.RUNPOD_API_KEY }}
         run: |
           set -e
-          echo " Scraping provider: ${{ matrix.provider_id }}"
-          # Prefer your provider-targeted entrypoint if it exists:
-          # e.g. python providers/scrape.py --provider "${{ matrix.provider_id }}"
-          # Fallback to your master runner with a provider flag:
-          if python - <<'PY'
-import sys, importlib.util
-print(importlib.util.find_spec("providers"))
-PY
-          then
-            echo "providers/ package detected"
+          echo "Running master_runner.py for ALL providers…"
+          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" \
+            || echo "master_runner reported issues (continuing)"
+          echo "Pipeline execution complete."
+
+      - name:  Verify generated data & history
+        run: |
+          echo "==== Latest CSV ===="
+          if [ -f data/derived/provider_scores_latest.csv ]; then
+            wc -l data/derived/provider_scores_latest.csv || true
+            echo "First 3 rows:"
+            head -3 data/derived/provider_scores_latest.csv || true
+            echo "Last 3 rows:"
+            tail -3 data/derived/provider_scores_latest.csv || true
+          else
+            echo " ERROR: Latest CSV not found!"
+            exit 1
+          fi
+          
+          echo ""
+          echo "==== History CSV ===="
+          if [ -f data/history/provider_scores_history.csv ]; then
+            echo "Total lines in history:"
+            wc -l data/history/provider_scores_history.csv || true
+            echo "Last 5 entries:"
+            tail -5 data/history/provider_scores_history.csv || true
+          else
+            echo " WARNING: History CSV not found (will be created)"
+          fi
+          
+          echo ""
+          echo "==== HCPI History JSON ===="
+          if [ -f hcpi/hcpi_history.json ]; then
+            echo "Number of historical data points:"
+            cat hcpi/hcpi_history.json | grep -o '"timestamp"' | wc -l || true
+            echo "Last entry:"
+            tail -10 hcpi/hcpi_history.json || true
+          else
+            echo "WARNING: HCPI history JSON not found (will be created)"
           fi
 
-          # Try a provider-specific scrape first; fallback to master_runner
-          ( python scrape_provider.py --provider "${{ matrix.provider_id }}" \
-            || python master_runner.py --provider "${{ matrix.provider_id }}" --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" \
-            || echo " Provider scrape failed for ${{ matrix.provider_id }} (continuing)" )
-
-          # Ensure output folder exists even if provider produced none
-          mkdir -p out/${{ matrix.provider_id }}
-
-          # If your scraper writes to common data paths, copy provider-sliced files here too
-          # (adjust these patterns to what your code emits)
-          cp -v data/derived/*${{ matrix.provider_id }}*.csv out/${{ matrix.provider_id }}/ 2>/dev/null || true
-          cp -v data/raw/*${{ matrix.provider_id }}*.json out/${{ matrix.provider_id }}/ 2>/dev/null || true
-          # Also copy the latest “flat” CSV rows for this provider if present
-          awk -F, 'NR==1 || tolower($0) ~ /${{ matrix.provider_id }}/' data/derived/provider_scores_latest.csv \
-            > out/${{ matrix.provider_id }}/provider_scores_${{ matrix.provider_id }}.csv 2>/dev/null || true
-
-          echo " Provider artifact tree:"
-          find out/${{ matrix.provider_id }} -type f -maxdepth 1 -print || true
-
-      - name: Upload provider artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: provider-${{ matrix.provider_id }}
-          path: out/${{ matrix.provider_id }}
-          if-no-files-found: warn
-          retention-days: 3
-
-  # ────────────────────────────────────────────────────────────────────────────
-  # 2) AGGREGATE: merge provider artifacts → regenerate CSV/HCPI → build site
-  # ────────────────────────────────────────────────────────────────────────────
-  aggregate-and-build:
-    name: Aggregate & Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    needs: scrape
-    concurrency:
-      group: forward-compute-index-aggregate
-      cancel-in-progress: true
-
-    steps:
-      - name:  Checkout
-        uses: actions/checkout@v4
-
-      - name:  Setup Python ${{ env.PYTHON_VERSION }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: pip
-
-      - name: Install dependencies
-        run: |
-          set -e
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          playwright install chromium
-          playwright install-deps
-
-      - name:  Download all provider artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: provider_artifacts
-
-      - name: Merge provider CSVs → provider_scores_latest.csv
-        run: |
-          set -e
-          mkdir -p data/derived data/history hcpi
-          python - <<'PY'
-import csv, glob, os, sys
-from datetime import datetime
-
-out_dir = "data/derived"
-os.makedirs(out_dir, exist_ok=True)
-merged_path = os.path.join(out_dir, "provider_scores_latest.csv")
-
-# Collect all provider CSVs from artifacts
-paths = glob.glob("provider_artifacts/provider-*/*.csv")
-rows = []
-header = None
-for p in paths:
-    with open(p, newline='', encoding='utf-8') as f:
-        r = csv.reader(f)
-        h = next(r, None)
-        if h is None: 
-            continue
-        if header is None:
-            header = h
-        # If headers mismatch, align by name as best effort
-        for row in r:
-            if not any(row):
-                continue
-            rows.append(row)
-
-if header is None:
-    # fallback: if repo already has a latest csv, keep it; else create minimal header
-    if os.path.exists(merged_path):
-        print(" No artifacts found; keeping existing provider_scores_latest.csv")
-        sys.exit(0)
-    header = ["provider","region","effective_price_usd_per_gpu_hr"]
-    rows = []
-
-with open(merged_path, "w", newline='', encoding='utf-8') as f:
-    w = csv.writer(f)
-    w.writerow(header)
-    w.writerows(rows)
-
-# Append simple history snapshot
-hist_dir = "data/history"
-os.makedirs(hist_dir, exist_ok=True)
-stamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-hist_path = os.path.join(hist_dir, f"provider_scores_{stamp}.csv")
-with open(hist_path, "w", newline='', encoding='utf-8') as f:
-    r = csv.reader(open(merged_path, newline='', encoding='utf-8'))
-    w = csv.writer(f); 
-    for row in r: w.writerow(row)
-
-print(f" Wrote {merged_path} ({len(rows)} rows)")
-print(f" Snapshot: {hist_path}")
-PY
-
-      - name:  Recompute HCPI / dashboard JSON
-        env:
-          HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
-        run: |
-          set -e
-          echo "🔁 Running index calculators…"
-          # Your updated scripts; adjust paths as needed:
-          python index_calculator.py || true
-          # If you have a dedicated export:
-          if [ -f index_calculator.py ]; then
-            python - <<'PY'
-import json, os
-from datetime import datetime
-# Optional: if index_calculator.py already exports, skip this
-if os.path.exists("hcpi/hcpi_dashboard.json"):
-    print("hcpi_dashboard.json already exists.")
-else:
-    # Minimal fallback dashboard JSON
-    os.makedirs("hcpi", exist_ok=True)
-    dash = {
-        "timestamp": datetime.utcnow().isoformat()+"Z",
-        "us_index": None,
-        "regions": {},
-        "categories": {}
-    }
-    json.dump(dash, open("hcpi/hcpi_dashboard.json","w"), indent=2)
-    print("Wrote hcpi/hcpi_dashboard.json (fallback)")
-PY
-          fi
-          # Ensure latest files exist (HCPI + full JSON)
-          ls -l hcpi || true
-
-      - name: 🔎 Verify merged data
-        run: |
-          echo "==== provider_scores_latest.csv ===="
-          wc -l data/derived/provider_scores_latest.csv || true
-          head -5 data/derived/provider_scores_latest.csv || true
-          tail -5 data/derived/provider_scores_latest.csv || true
-          echo "==== hcpi folder ===="
-          ls -lah hcpi || true
-
-      - name: 💾 Commit generated data (if enabled)
+      - name:  Commit generated data to repository
         if: env.COMMIT_DATA == 'true'
         uses: EndBug/add-and-commit@v9
         with:
@@ -260,11 +98,11 @@ PY
             data/history/*.csv
             hcpi/*.json
             hcpi/*history*.csv
-          message: "ci: hourly provider scrape + index [skip ci]"
+          message: "ci: hourly data update [skip ci]"
           author_name: github-actions
           author_email: actions@github.com
 
-      - name: 🏗️ Prepare static site
+      - name: 🏗️ Prepare static site (public/)
         run: |
           set -e
           mkdir -p public/data/derived public/data/history public/hcpi
@@ -284,30 +122,24 @@ PY
           cp -v hcpi/*.json         public/hcpi/          2>/dev/null || true
           cp -v hcpi/*history*.csv  public/hcpi/          2>/dev/null || true
 
-          echo "==== Verify public/data/derived/provider_scores_latest.csv ===="
-          if [ -f public/data/derived/provider_scores_latest.csv ]; then
-            wc -l public/data/derived/provider_scores_latest.csv
-            head -3 public/data/derived/provider_scores_latest.csv
-            tail -3 public/data/derived/provider_scores_latest.csv
-          else
-            echo " ERROR: provider_scores_latest.csv missing after copy!"
-            exit 1
-          fi
+          echo "==== Verify copied files ===="
+          echo "Latest CSV:"
+          wc -l public/data/derived/provider_scores_latest.csv || true
+          echo "History CSV:"
+          wc -l public/data/history/provider_scores_history.csv 2>/dev/null || echo "No history CSV yet"
+          echo "HCPI History JSON:"
+          ls -lh public/hcpi/hcpi_history.json 2>/dev/null || echo "No HCPI history JSON yet"
 
           echo "==== public/ tree ===="
           find public -type f -print
 
-      - name: 📤 Upload Pages artifact
+      - name:  Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: public
 
-  # ────────────────────────────────────────────────────────────────────────────
-  # 3) DEPLOY PAGES
-  # ────────────────────────────────────────────────────────────────────────────
   deploy:
-    name: Deploy to GitHub Pages
-    needs: aggregate-and-build
+    needs: build-and-bundle
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -316,9 +148,6 @@ PY
       pages: write
       id-token: write
     steps:
-      - name:  Deploy
+      - name:  Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-
-
