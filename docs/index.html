@@ -51,8 +51,6 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .insight-content{flex:1}
 .insight-label{font-size:11px;color:var(--sub);margin-bottom:2px}
 .insight-value{font-size:16px;font-weight:600;color:var(--text)}
-.use-provider-btn{background:var(--accent);color:#052535;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:4px;transition:opacity .2s}
-.use-provider-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -160,34 +158,32 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
     </div>
 
     <div class="card">
-      <h3>Profit Calculator</h3>
-      <div class="small" style="margin-bottom:12px">Calculate profit margins for reselling GPU compute</div>
+      <h3>ROI Calculator</h3>
+      <div class="small" style="margin-bottom:12px">Estimate return on investment from revenue vs. cost.</div>
       
-      <div class="field">
-        <label>Your selling price ($/GPU-hr)</label>
-        <input id="sellingPrice" type="number" step="0.01" value="1.50" min="0">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field">
+          <label>Total Revenue ($)</label>
+          <input id="roiRevenue" type="number" step="0.01" value="5000" min="0">
+        </div>
+        <div class="field">
+          <label>Total Cost ($)</label>
+          <input id="roiCost" type="number" step="0.01" value="3500" min="0">
+        </div>
       </div>
 
       <div class="result-box">
         <div class="metric">
-          <span class="metric-label">Your cost (provider)</span>
-          <span class="metric-value" id="profitCost">–</span>
+          <span class="metric-label">ROI (%)</span>
+          <span class="metric-value" id="roiPercent">–</span>
         </div>
         <div class="metric">
-          <span class="metric-label">Your selling price</span>
-          <span class="metric-value" id="profitSelling">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Profit per GPU-hour</span>
-          <span class="metric-value" id="profitPerHour">–</span>
-        </div>
-        <div class="metric">
-          <span class="metric-label">Profit margin</span>
-          <span class="metric-value" id="profitMargin">–</span>
+          <span class="metric-label">Return ($)</span>
+          <span class="metric-value" id="roiReturn">–</span>
         </div>
         <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
-          <span class="metric-label" style="font-size:15px;font-weight:600">Total Profit</span>
-          <span class="result-value" id="profitTotal">–</span>
+          <span class="metric-label" style="font-size:15px;font-weight:600">Interpretation</span>
+          <span class="result-value" id="roiMessage">–</span>
         </div>
       </div>
     </div>
@@ -234,99 +230,45 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
   <footer>Data sources: <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
 
 <script>
+// ========= Helpers =========
 const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
 const fmtNum = n => isFinite(n) ? Number(n).toLocaleString() : '–';
-const fmtUpdated = iso => {
-  try{
-    const d = new Date(iso);
-    const date = d.toLocaleString(undefined,{month:'short', day:'2-digit'});
-    const time = d.toLocaleString(undefined,{hour:'2-digit', minute:'2-digit', hour12:false});
-    return `${date}, ${time}`;
-  }catch(e){ return iso||'–'; }
-};
-const hoursOf = s => {
-  s=String(s||'').toLowerCase();
-  if (s.includes('year')) return 24*365;
-  if (s.includes('6 month')) return 24*30*6;
-  if (s.includes('3 month')) return 24*30*3;
-  if (s.includes('month')) return 24*30;
-  if (s.includes('week'))  return 24*7;
-  if (s.includes('day'))   return 24;
-  return 1;
-};
+const fmtUpdated = iso => {try{const d=new Date(iso);const date=d.toLocaleString(undefined,{month:'short',day:'2-digit'});const time=d.toLocaleString(undefined,{hour:'2-digit',minute:'2-digit',hour12:false});return `${date}, ${time}`;}catch(e){return iso||'–';}};
+const hoursOf = s => {s=String(s||'').toLowerCase();if(s.includes('year'))return 24*365;if(s.includes('6 month'))return 24*30*6;if(s.includes('3 month'))return 24*30*3;if(s.includes('month'))return 24*30;if(s.includes('week'))return 24*7;if(s.includes('day'))return 24;return 1;};
 
-const PROVIDER_CATEGORY = {
-  "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
-  "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","RunPod","Paperspace","FluidStack","Nebius"]),
-  "Serverless":         new Set(["Together.ai","Replicate"]),
-  "Specialized":        new Set(["Jarvislabs","Vast.ai","OVHcloud","Hyperstack","TensorDock","Voltage Park","Scaleway","Genesis Cloud","SF Compute"])
-};
-
-const getCategory = (name) => {
-  for (const [cat, set] of Object.entries(PROVIDER_CATEGORY)) {
-    for (const v of set) {
-      if ((name||'').toLowerCase().includes(v.toLowerCase())) return cat;
-    }
-  }
-  return "Other";
-};
-
-const inCategory = (name, cat) => {
-  if (cat==='All') return true;
-  const set = PROVIDER_CATEGORY[cat]; if(!set) return true;
-  for (const v of set) if ((name||'').toLowerCase().includes(v.toLowerCase())) return true;
-  return false;
-};
-
+// ========= Data Stores =========
 let full={}, scores=[], allProviders=[];
 
-async function loadJSON(url){
-  try{
-    const r=await fetch(url + '?t=' + Date.now());
-    if(!r.ok) throw 0;
-    return await r.json();
-  }catch{ return {}; }
-}
-
+// ========= Loaders =========
+async function loadJSON(url){try{const r=await fetch(url+'?t='+Date.now());if(!r.ok)throw 0;return await r.json();}catch(e){return {};}}
 async function loadCSV(url){
   try{
-    const r = await fetch(url + '?t=' + Date.now()); 
-    if(!r.ok) return [];
-    const txt = await r.text();
-    const lines = txt.replace(/^\uFEFF/, '').split(/\r?\n/).map(l => l.trim()).filter(l => l);
-    if (!lines.length) return [];
-    const parseCSVLine = (line) => {
-      const result = []; let current = ''; let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-        if (char === '"') inQuotes = !inQuotes;
-        else if (char === ',' && !inQuotes) { result.push(current.trim()); current = ''; }
-        else current += char;
+    const r=await fetch(url+'?t='+Date.now()); if(!r.ok) return [];
+    const txt=await r.text();
+    const lines=txt.replace(/^\uFEFF/,'').split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
+    if(!lines.length) return [];
+    // basic CSV parse (quotes-safe parser above was fine too; this keeps length similar)
+    const parseLine = (line) => {
+      const out=[]; let cur=''; let q=false;
+      for (let i=0;i<line.length;i++){
+        const c=line[i];
+        if(c==='"'){q=!q;}
+        else if(c===',' && !q){out.push(cur.trim());cur='';}
+        else{cur+=c;}
       }
-      result.push(current.trim()); return result;
+      out.push(cur.trim()); return out;
     };
-    const header = parseCSVLine(lines[0]);
-    const rows = []; const skipped = [];
-    for (let i = 1; i < lines.length; i++) {
-      const line = lines[i]; if (!line) continue;
-      try {
-        const cells = parseCSVLine(line); const obj = {};
-        header.forEach((h, idx) => { obj[h] = (cells[idx] || '').replace(/^"|"$/g, '').trim(); });
-        obj.provider = (obj.provider || '').trim();
-        obj.region = (obj.region || '').trim();
-        const priceStr = (obj.effective_price_usd_per_gpu_hr || '').trim();
-        obj.effective_price_usd_per_gpu_hr = parseFloat(priceStr);
-        if (obj.provider && isFinite(obj.effective_price_usd_per_gpu_hr) && obj.effective_price_usd_per_gpu_hr > 0) {
-          rows.push(obj);
-        } else {
-          skipped.push({line: i+1, provider: obj.provider, price: priceStr, reason: !obj.provider ? 'no provider' : 'invalid price'});
-        }
-      } catch (e) {
-        skipped.push({line: i+1, reason: 'parse error'});
-      }
+    const header=parseLine(lines[0]);
+    const rows=[];
+    for(let i=1;i<lines.length;i++){
+      const cells=parseLine(lines[i]); const obj={};
+      header.forEach((h,idx)=>obj[h]=(cells[idx]||'').replace(/^"|"$/g,'').trim());
+      const provider=(obj.provider||'').trim();
+      const price=parseFloat((obj.effective_price_usd_per_gpu_hr||'').trim());
+      if(provider && isFinite(price) && price>0) rows.push({provider, effective_price_usd_per_gpu_hr:price});
     }
     return rows;
-  }catch(e){ return []; }
+  }catch(e){return [];}
 }
 
 async function loadAll(){
@@ -334,50 +276,46 @@ async function loadAll(){
     loadJSON('hcpi/hcpi_latest_full.json'),
     loadCSV('data/derived/provider_scores_latest.csv')
   ]);
-  
-  // Average price per provider across all regions from CSV
-  const providerMap = new Map();
+  // Build provider averages
+  const providerMap=new Map();
   scores.forEach(r=>{
-    const prov = r.provider;
-    const price = r.effective_price_usd_per_gpu_hr;
-    if (!prov || !isFinite(price) || price <= 0) return;
-    if (!providerMap.has(prov)) providerMap.set(prov, []);
+    const prov=r.provider; const price=r.effective_price_usd_per_gpu_hr;
+    if(!prov || !isFinite(price) || price<=0) return;
+    if(!providerMap.has(prov)) providerMap.set(prov,[]);
     providerMap.get(prov).push(price);
   });
-  
-  allProviders = Array.from(providerMap.entries()).map(([name, prices])=>{
-    const avg = prices.reduce((a,b)=>a+b,0) / prices.length;
+  allProviders = Array.from(providerMap.entries()).map(([name,prices])=>{
+    const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
     return {name, avgPrice: avg, category: getCategory(name)};
   }).sort((a,b)=>a.avgPrice-b.avgPrice);
 }
 
+// ========= Categories (for leaderboards only) =========
+const PROVIDER_CATEGORY = {
+  "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
+  "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","RunPod","Paperspace","FluidStack","Nebius"]),
+  "Serverless":         new Set(["Together.ai","Replicate"]),
+  "Specialized":        new Set(["Jarvislabs","Vast.ai","OVHcloud","Hyperstack","TensorDock","Voltage Park","Scaleway","Genesis Cloud","SF Compute"])
+};
+const getCategory = (name) => {
+  for (const [cat, set] of Object.entries(PROVIDER_CATEGORY)) {
+    for (const v of set) if ((name||'').toLowerCase().includes(v.toLowerCase())) return cat;
+  }
+  return "Other";
+};
+
+// ========= Index + Header =========
 function currentIndex(){
   const region = document.getElementById('region').value;
-  const cat = document.getElementById('category').value;
-  const ts = (full && full.metadata && full.metadata.timestamp) || null;
+  const ts = full?.metadata?.timestamp || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
-  
-  // Prefer clean count from metadata; fallback to CSV-based unique count
   const metaCount = full?.metadata?.unique_providers;
   const fallbackCount = new Set(scores.map(r=>r.provider)).size;
   const uniqueCount = isFinite(metaCount) ? metaCount : fallbackCount;
   document.getElementById('providerCount').textContent = `${uniqueCount} providers tracked`;
-  
-  if (cat !== 'All') {
-    const cats = full.category_indices || {};
-    const item = cats[cat] || {};
-    if (region === 'US (All)' && isFinite(item.category_index)) return item.category_index;
-    const byReg = item.regional_indices || {};
-    if (isFinite(byReg[region])) return byReg[region];
-    if (isFinite(item.category_index)) return item.category_index;
-    return NaN;
-  }
-  if (region === 'US (All)') {
-    return isFinite(full.us_index) ? full.us_index : NaN;
-  } else {
-    const reg = full.regional_indices ? full.regional_indices[region] : undefined;
-    return isFinite(reg) ? reg : NaN;
-  }
+  if (region === 'US (All)') return isFinite(full.us_index) ? full.us_index : NaN;
+  const reg = full.regional_indices ? full.regional_indices[region] : undefined;
+  return isFinite(reg) ? reg : NaN;
 }
 
 function renderIndex(){
@@ -385,12 +323,47 @@ function renderIndex(){
   document.getElementById('indexVal').textContent = isFinite(val) ? fmtMoney(val) : '–';
 }
 
+// ========= Smart Insights =========
+function renderInsights(){
+  const box = document.getElementById('insights');
+  if (!allProviders || allProviders.length === 0) {
+    box.innerHTML = '<div class="small">No provider pricing available yet.</div>';
+    return;
+  }
+  const cheapest = allProviders[0];
+  const mostExpensive = allProviders[allProviders.length - 1];
+  const avgPrice = allProviders.reduce((sum, p) => sum + p.avgPrice, 0) / allProviders.length;
+
+  // Pick a “best value” representative in Major GPU Clouds (cheapest in that set)
+  const majorGPUList = allProviders.filter(p => getCategory(p.name) === "Major GPU Clouds").sort((a,b)=>a.avgPrice-b.avgPrice);
+  const majorGPU = majorGPUList.length ? majorGPUList[0] : null;
+
+  const insights = [
+    { icon:'⚡', label:'Cheapest Provider', value:`${cheapest.name} • ${fmtMoney(cheapest.avgPrice)}/hr` },
+    { icon:'📊', label:'Market Average', value:`${fmtMoney(avgPrice)}/hr` },  // no spread subtext
+    { icon:'🏆', label:'Best Value (Major Clouds)', value: majorGPU ? `${majorGPU.name} • ${fmtMoney(majorGPU.avgPrice)}/hr` : 'N/A' },
+    { icon:'💰', label:'Potential Savings', value:`${fmtMoney(avgPrice - cheapest.avgPrice)}/GPU-hr`, subtext:'vs market average' }
+  ];
+
+  box.innerHTML = insights.map(i => `
+    <div class="insight-card">
+      <div class="insight-icon">${i.icon}</div>
+      <div class="insight-content">
+        <div class="insight-label">${i.label}</div>
+        <div class="insight-value">${i.value}</div>
+        ${i.subtext ? `<div style="font-size:11px;color:var(--sub);margin-top:2px">${i.subtext}</div>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+// ========= Leaderboards =========
 function renderLeaderboards(){
   const categories = ["Big 3 Hyperscalers", "Major GPU Clouds", "Serverless", "Specialized"];
   const categoryHTML = categories.map(cat=>{
-    const inCat = allProviders.filter(p=>p.category===cat);
+    const inCat = allProviders.filter(p=>getCategory(p.name)===cat);
     if (!inCat.length) return '';
-    const leader = inCat[0];
+    const leader = inCat.sort((a,b)=>a.avgPrice-b.avgPrice)[0];
     return `
       <div class="leaderboard-item" style="cursor:pointer" onclick="useProvider('${leader.name}', ${leader.avgPrice})">
         <div class="rank gold">1</div>
@@ -403,7 +376,7 @@ function renderLeaderboards(){
     `;
   }).join('');
   document.getElementById('categoryLeaderboard').innerHTML = categoryHTML || '<div class="small">No data</div>';
-  
+
   const top5 = allProviders.slice(0,5);
   const overallHTML = top5.map((p,i)=>{
     const rankClass = i===0 ? 'gold' : i===1 ? 'silver' : i===2 ? 'bronze' : '';
@@ -412,7 +385,7 @@ function renderLeaderboards(){
         <div class="rank ${rankClass}">${i+1}</div>
         <div class="provider-info">
           <div class="provider-leader-name">${p.name}</div>
-          <div class="category-badge">${p.category}</div>
+          <div class="category-badge">${getCategory(p.name)}</div>
         </div>
         <div style="font-size:20px;font-weight:700;color:var(--accent)">${fmtMoney(p.avgPrice)}</div>
       </div>
@@ -425,63 +398,12 @@ function useProvider(name, price){
   const sel = document.getElementById('providerSelect');
   sel.value = name;
   calculateCost();
-  calculateProfit();
-  document.getElementById('providerSelect').scrollIntoView({behavior: 'smooth', block: 'center'});
+  // Keep page UX smooth
+  document.getElementById('providerSelect').scrollIntoView({behavior:'smooth', block:'center'});
 }
 window.useProvider = useProvider;
 
-function renderInsights(){
-  const box = document.getElementById('insights');
-  if (!allProviders || allProviders.length === 0) {
-    box.innerHTML = '<div class="small">No provider pricing available yet.</div>';
-    return;
-  }
-  const cheapest = allProviders[0];
-  const mostExpensive = allProviders[allProviders.length - 1];
-  const avgPrice = allProviders.reduce((sum, p) => sum + p.avgPrice, 0) / allProviders.length;
-  const spread = mostExpensive.avgPrice - cheapest.avgPrice;
-  const spreadPct = ((spread / mostExpensive.avgPrice) * 100).toFixed(0);
-  const majorGPU = allProviders.filter(p => p.category === "Major GPU Clouds").sort((a,b) => a.avgPrice - b.avgPrice)[0];
-
-  const insights = [
-    {
-      icon: '⚡',
-      label: 'Cheapest Provider',
-      value: `${cheapest.name} • ${fmtMoney(cheapest.avgPrice)}/hr`,
-      action: `<button class="use-provider-btn" onclick="useProvider('${cheapest.name}', ${cheapest.avgPrice})">Use This</button>`
-    },
-    {
-      icon: '📊',
-      label: 'Market Average',
-      value: `${fmtMoney(avgPrice)}/hr`,
-      subtext: `${spreadPct}% price spread across providers`
-    },
-    {
-      icon: '🏆',
-      label: 'Best Value (Major Clouds)',
-      value: majorGPU ? `${majorGPU.name} • ${fmtMoney(majorGPU.avgPrice)}/hr` : 'N/A',
-      action: majorGPU ? `<button class="use-provider-btn" onclick="useProvider('${majorGPU.name}', ${majorGPU.avgPrice})">Use This</button>` : ''
-    },
-    {
-      icon: '💰',
-      label: 'Potential Savings',
-      value: `${fmtMoney(avgPrice - cheapest.avgPrice)}/GPU-hr`,
-      subtext: `vs market average`
-    }
-  ];
-  box.innerHTML = insights.map(i => `
-    <div class="insight-card">
-      <div class="insight-icon">${i.icon}</div>
-      <div class="insight-content">
-        <div class="insight-label">${i.label}</div>
-        <div class="insight-value">${i.value}</div>
-        ${i.subtext ? `<div style="font-size:11px;color:var(--sub);margin-top:2px">${i.subtext}</div>` : ''}
-        ${i.action || ''}
-      </div>
-    </div>
-  `).join('');
-}
-
+// ========= Dropdown + Calculators =========
 function renderProviderDropdown(){
   const sel = document.getElementById('providerSelect');
   sel.innerHTML = '<option value="">Select a provider</option>' + 
@@ -504,40 +426,47 @@ function calculateCost(){
   const hrs = hoursOf(dur);
   const gpuHours = count * hrs;
   const totalCost = price * gpuHours;
+
   document.getElementById('costPrice').textContent = fmtMoney(price) + '/hr';
   document.getElementById('costHours').textContent = fmtNum(hrs) + ' hrs';
   document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
   document.getElementById('costTotal').textContent = fmtMoney(totalCost);
+
   return {price, totalCost, gpuHours};
 }
 
-function calculateProfit(){
-  const costData = calculateCost();
-  if (!costData) {
-    document.getElementById('profitCost').textContent = '–';
-    document.getElementById('profitSelling').textContent = '–';
-    document.getElementById('profitPerHour').textContent = '–';
-    document.getElementById('profitMargin').textContent = '–';
-    document.getElementById('profitTotal').textContent = '–';
+function calculateROI(){
+  const rev = Number(document.getElementById('roiRevenue').value) || 0;
+  const cost = Number(document.getElementById('roiCost').value) || 0;
+
+  if (cost <= 0) {
+    document.getElementById('roiPercent').textContent = '–';
+    document.getElementById('roiReturn').textContent = '–';
+    document.getElementById('roiMessage').textContent = '–';
+    document.getElementById('roiPercent').className = 'metric-value';
+    document.getElementById('roiReturn').className = 'metric-value';
+    document.getElementById('roiMessage').className = 'result-value';
     return;
   }
-  const sellingPrice = Number(document.getElementById('sellingPrice').value) || 0;
-  const profitPerHour = sellingPrice - costData.price;
-  const totalProfit = profitPerHour * costData.gpuHours;
-  const margin = sellingPrice > 0 ? (profitPerHour / sellingPrice) * 100 : 0;
-  document.getElementById('profitCost').textContent = fmtMoney(costData.price) + '/hr';
-  document.getElementById('profitSelling').textContent = fmtMoney(sellingPrice) + '/hr';
-  const perHourEl = document.getElementById('profitPerHour');
-  perHourEl.textContent = fmtMoney(profitPerHour) + '/hr';
-  perHourEl.className = 'metric-value ' + (profitPerHour >= 0 ? 'positive' : 'negative');
-  const marginEl = document.getElementById('profitMargin');
-  marginEl.textContent = margin.toFixed(1) + '%';
-  marginEl.className = 'metric-value ' + (margin >= 0 ? 'positive' : 'negative');
-  const totalEl = document.getElementById('profitTotal');
-  totalEl.textContent = fmtMoney(totalProfit);
-  totalEl.className = 'result-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+
+  const ret = rev - cost;
+  const roi = (ret / cost) * 100;
+
+  const pctEl = document.getElementById('roiPercent');
+  const retEl = document.getElementById('roiReturn');
+  const msgEl = document.getElementById('roiMessage');
+
+  pctEl.textContent = roi.toFixed(1) + '%';
+  retEl.textContent = fmtMoney(ret);
+
+  const positive = roi >= 0;
+  pctEl.className = 'metric-value ' + (positive ? 'positive' : 'negative');
+  retEl.className = 'metric-value ' + (positive ? 'positive' : 'negative');
+  msgEl.className = 'result-value ' + (positive ? 'positive' : 'negative');
+  msgEl.textContent = positive ? 'Profitable (positive return)' : 'Unprofitable (negative return)';
 }
 
+// ========= Workload Estimator =========
 function calculateWorkload(){
   const workloadInput = Number(document.getElementById('workloadGPUHours').value) || 0;
   const unit = document.getElementById('workloadUnit').value;
@@ -545,11 +474,13 @@ function calculateWorkload(){
   if (unit.includes('days')) gpuHours *= 24;
   if (unit.includes('weeks')) gpuHours *= 24 * 7;
   if (gpuHours <= 0) { document.getElementById('workloadResults').style.display = 'none'; return; }
+  
   const results = allProviders.map(p => ({
     name: p.name,
     pricePerHr: p.avgPrice,
     totalCost: p.avgPrice * gpuHours
   })).sort((a,b)=>a.totalCost-b.totalCost);
+  
   const cheapest = results[0].totalCost;
   const tbody = document.getElementById('workloadTableBody');
   tbody.innerHTML = results.map((r,i)=>{
@@ -563,17 +494,23 @@ function calculateWorkload(){
         <td style="padding:8px;text-align:right;color:${isCheapest?'var(--ok)': diff>cheapest*0.5?'#ff6b6b':'var(--warn)'}">${isCheapest?'Cheapest':'+'+fmtMoney(diff)+' (+'+diffPct.toFixed(0)+'%)'}</td>
       </tr>`;
   }).join('');
+  
   document.getElementById('workloadResults').style.display = 'block';
 }
 
+// ========= Listeners & Boot =========
 function setupListeners(){
   document.getElementById('region').addEventListener('change', renderIndex);
   document.getElementById('category').addEventListener('change', renderIndex);
   document.getElementById('btnRefresh').addEventListener('click', renderIndex);
-  document.getElementById('providerSelect').addEventListener('change', ()=>{ calculateCost(); calculateProfit(); });
-  document.getElementById('count').addEventListener('input', ()=>{ calculateCost(); calculateProfit(); });
-  document.getElementById('duration').addEventListener('change', ()=>{ calculateCost(); calculateProfit(); });
-  document.getElementById('sellingPrice').addEventListener('input', calculateProfit);
+  
+  document.getElementById('providerSelect').addEventListener('change', calculateCost);
+  document.getElementById('count').addEventListener('input', calculateCost);
+  document.getElementById('duration').addEventListener('change', calculateCost);
+
+  document.getElementById('roiRevenue').addEventListener('input', calculateROI);
+  document.getElementById('roiCost').addEventListener('input', calculateROI);
+  
   document.getElementById('btnWorkload').addEventListener('click', calculateWorkload);
   document.getElementById('workloadGPUHours').addEventListener('input', calculateWorkload);
   document.getElementById('workloadUnit').addEventListener('change', calculateWorkload);
@@ -582,9 +519,9 @@ function setupListeners(){
 async function boot(){
   await loadAll();
   renderIndex();
+  renderInsights();
   renderLeaderboards();
   renderProviderDropdown();
-  renderInsights();          // ← ensures Smart Insights populates
   setupListeners();
 }
 boot();
