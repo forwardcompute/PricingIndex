@@ -86,10 +86,19 @@ def _write_latest_artifacts(df_scraped: pd.DataFrame, hcpi_result, ts: str, verb
 def _append_history_quotes(df_scraped: pd.DataFrame, run_iso_ts: str):
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     hist_path = HISTORY_DIR / "provider_scores_history.csv"
+
     norm = _normalize_scrape_columns(df_scraped).copy()
-    norm.insert(0, "timestamp", run_iso_ts)
+
+    # If the scraped data already includes a timestamp, keep it as quote_timestamp
+    if "timestamp" in norm.columns:
+        norm.rename(columns={"timestamp": "quote_timestamp"}, inplace=True)
+    else:
+        norm["quote_timestamp"] = pd.NaT
+    norm.insert(0, "run_timestamp", run_iso_ts)
+
     write_header = not hist_path.exists()
     norm.to_csv(hist_path, mode="a", header=write_header, index=False)
+
 
 def _append_history_indices(hcpi_result: dict):
     HCPI_DIR.mkdir(parents=True, exist_ok=True)
@@ -174,7 +183,8 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         _append_history_quotes(df_scraped, run_iso_ts)
         _append_history_indices(hcpi_result)
     except Exception as e:
-        print(f"history append failed: {e}")
+        print(f"history append failed: {type(e).__name__}: {e}")
+
 
     if verbose:
         print("\n" + "=" * 70)
