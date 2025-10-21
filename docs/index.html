@@ -30,7 +30,6 @@ button:hover{opacity:.85}
 .field label{color:var(--sub);font-size:13px;font-weight:500}
 .result-box{background:var(--muted);border:1px solid #2c3240;border-radius:8px;padding:14px;margin-top:12px}
 .result-value{font-size:24px;font-weight:700;color:var(--accent)}
-.result-label{color:var(--sub);font-size:12px;margin-top:4px}
 footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #2c3240}
 .metric:last-child{border:none}
@@ -157,33 +156,29 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       </div>
     </div>
 
+    <!-- ROI (automatic, vs market average) -->
     <div class="card">
-      <h3>ROI Calculator</h3>
-      <div class="small" style="margin-bottom:12px">Estimate return on investment from revenue vs. cost.</div>
-      
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div class="field">
-          <label>Total Revenue ($)</label>
-          <input id="roiRevenue" type="number" step="0.01" value="5000" min="0">
-        </div>
-        <div class="field">
-          <label>Total Cost ($)</label>
-          <input id="roiCost" type="number" step="0.01" value="3500" min="0">
-        </div>
+      <h3>ROI (vs Market Average)</h3>
+      <div class="small" style="margin-bottom:12px">
+        Automatically compares your selected provider with the market average price across providers.
       </div>
 
       <div class="result-box">
         <div class="metric">
+          <span class="metric-label">Selected provider price</span>
+          <span class="metric-value" id="roiProviderPrice">–</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Market average price</span>
+          <span class="metric-value" id="roiMarketAvg">–</span>
+        </div>
+        <div class="metric">
           <span class="metric-label">ROI (%)</span>
           <span class="metric-value" id="roiPercent">–</span>
         </div>
-        <div class="metric">
-          <span class="metric-label">Return ($)</span>
-          <span class="metric-value" id="roiReturn">–</span>
-        </div>
         <div class="metric" style="margin-top:8px;padding-top:12px;border-top:2px solid #2c3240">
-          <span class="metric-label" style="font-size:15px;font-weight:600">Interpretation</span>
-          <span class="result-value" id="roiMessage">–</span>
+          <span class="metric-label" style="font-size:15px;font-weight:600">Savings ($) for selected workload</span>
+          <span class="result-value" id="roiSavings">–</span>
         </div>
       </div>
     </div>
@@ -237,7 +232,7 @@ const fmtUpdated = iso => {try{const d=new Date(iso);const date=d.toLocaleString
 const hoursOf = s => {s=String(s||'').toLowerCase();if(s.includes('year'))return 24*365;if(s.includes('6 month'))return 24*30*6;if(s.includes('3 month'))return 24*30*3;if(s.includes('month'))return 24*30;if(s.includes('week'))return 24*7;if(s.includes('day'))return 24;return 1;};
 
 // ========= Data Stores =========
-let full={}, scores=[], allProviders=[];
+let full={}, scores=[], allProviders=[], marketAvg = NaN;
 
 // ========= Loaders =========
 async function loadJSON(url){try{const r=await fetch(url+'?t='+Date.now());if(!r.ok)throw 0;return await r.json();}catch(e){return {};}}
@@ -247,17 +242,7 @@ async function loadCSV(url){
     const txt=await r.text();
     const lines=txt.replace(/^\uFEFF/,'').split(/\r?\n/).map(l=>l.trim()).filter(l=>l);
     if(!lines.length) return [];
-    // basic CSV parse (quotes-safe parser above was fine too; this keeps length similar)
-    const parseLine = (line) => {
-      const out=[]; let cur=''; let q=false;
-      for (let i=0;i<line.length;i++){
-        const c=line[i];
-        if(c==='"'){q=!q;}
-        else if(c===',' && !q){out.push(cur.trim());cur='';}
-        else{cur+=c;}
-      }
-      out.push(cur.trim()); return out;
-    };
+    const parseLine = (line) => { const out=[]; let cur=''; let q=false; for (let i=0;i<line.length;i++){ const c=line[i]; if(c==='"'){q=!q;} else if(c===',' && !q){out.push(cur.trim());cur='';} else {cur+=c;} } out.push(cur.trim()); return out; };
     const header=parseLine(lines[0]);
     const rows=[];
     for(let i=1;i<lines.length;i++){
@@ -265,7 +250,7 @@ async function loadCSV(url){
       header.forEach((h,idx)=>obj[h]=(cells[idx]||'').replace(/^"|"$/g,'').trim());
       const provider=(obj.provider||'').trim();
       const price=parseFloat((obj.effective_price_usd_per_gpu_hr||'').trim());
-      if(provider && isFinite(price) && price>0) rows.push({provider, effective_price_usd_per_gpu_hr:price});
+      if(provider && isFinite(price) && price>0) rows.push({provider, price});
     }
     return rows;
   }catch(e){return [];}
@@ -276,21 +261,26 @@ async function loadAll(){
     loadJSON('hcpi/hcpi_latest_full.json'),
     loadCSV('data/derived/provider_scores_latest.csv')
   ]);
-  // Build provider averages
-  const providerMap=new Map();
+
+  // Provider averages
+  const map=new Map();
   scores.forEach(r=>{
-    const prov=r.provider; const price=r.effective_price_usd_per_gpu_hr;
+    const prov=r.provider; const price=r.price;
     if(!prov || !isFinite(price) || price<=0) return;
-    if(!providerMap.has(prov)) providerMap.set(prov,[]);
-    providerMap.get(prov).push(price);
+    if(!map.has(prov)) map.set(prov,[]);
+    map.get(prov).push(price);
   });
-  allProviders = Array.from(providerMap.entries()).map(([name,prices])=>{
+  allProviders = Array.from(map.entries()).map(([name,prices])=>{
     const avg = prices.reduce((a,b)=>a+b,0)/prices.length;
-    return {name, avgPrice: avg, category: getCategory(name)};
+    return {name, avgPrice: avg};
   }).sort((a,b)=>a.avgPrice-b.avgPrice);
+
+  // Market average across providers
+  const allPrices = allProviders.map(p=>p.avgPrice).filter(v=>isFinite(v) && v>0);
+  marketAvg = allPrices.length ? (allPrices.reduce((a,b)=>a+b,0) / allPrices.length) : NaN;
 }
 
-// ========= Categories (for leaderboards only) =========
+// ========= Categories (for leaderboards) =========
 const PROVIDER_CATEGORY = {
   "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
   "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","RunPod","Paperspace","FluidStack","Nebius"]),
@@ -326,25 +316,17 @@ function renderIndex(){
 // ========= Smart Insights =========
 function renderInsights(){
   const box = document.getElementById('insights');
-  if (!allProviders || allProviders.length === 0) {
-    box.innerHTML = '<div class="small">No provider pricing available yet.</div>';
-    return;
-  }
+  if (!allProviders || allProviders.length === 0) { box.innerHTML = '<div class="small">No provider pricing available yet.</div>'; return; }
   const cheapest = allProviders[0];
-  const mostExpensive = allProviders[allProviders.length - 1];
-  const avgPrice = allProviders.reduce((sum, p) => sum + p.avgPrice, 0) / allProviders.length;
-
-  // Pick a “best value” representative in Major GPU Clouds (cheapest in that set)
-  const majorGPUList = allProviders.filter(p => getCategory(p.name) === "Major GPU Clouds").sort((a,b)=>a.avgPrice-b.avgPrice);
-  const majorGPU = majorGPUList.length ? majorGPUList[0] : null;
+  const avgPrice = marketAvg;
+  const majorGPU = allProviders.find(p => /coreweave|lambda|crusoe|runpod|paperspace|fluidstack|nebius/i.test(p.name)) || null;
 
   const insights = [
     { icon:'⚡', label:'Cheapest Provider', value:`${cheapest.name} • ${fmtMoney(cheapest.avgPrice)}/hr` },
-    { icon:'📊', label:'Market Average', value:`${fmtMoney(avgPrice)}/hr` },  // no spread subtext
+    { icon:'📊', label:'Market Average', value:`${fmtMoney(avgPrice)}/hr` },
     { icon:'🏆', label:'Best Value (Major Clouds)', value: majorGPU ? `${majorGPU.name} • ${fmtMoney(majorGPU.avgPrice)}/hr` : 'N/A' },
     { icon:'💰', label:'Potential Savings', value:`${fmtMoney(avgPrice - cheapest.avgPrice)}/GPU-hr`, subtext:'vs market average' }
   ];
-
   box.innerHTML = insights.map(i => `
     <div class="insight-card">
       <div class="insight-icon">${i.icon}</div>
@@ -397,8 +379,7 @@ function renderLeaderboards(){
 function useProvider(name, price){
   const sel = document.getElementById('providerSelect');
   sel.value = name;
-  calculateCost();
-  // Keep page UX smooth
+  calculateCost();   // will also trigger ROI
   document.getElementById('providerSelect').scrollIntoView({behavior:'smooth', block:'center'});
 }
 window.useProvider = useProvider;
@@ -418,6 +399,7 @@ function calculateCost(){
     document.getElementById('costHours').textContent = '–';
     document.getElementById('costGPUHours').textContent = '–';
     document.getElementById('costTotal').textContent = '–';
+    calculateROI(); // refresh ROI anyway (will show prompts)
     return null;
   }
   const price = parseFloat(selectedOption.dataset.price);
@@ -432,38 +414,44 @@ function calculateCost(){
   document.getElementById('costGPUHours').textContent = fmtNum(gpuHours);
   document.getElementById('costTotal').textContent = fmtMoney(totalCost);
 
+  calculateROI(); // keep ROI in sync
   return {price, totalCost, gpuHours};
 }
 
+// ========= ROI: vs Market Average =========
 function calculateROI(){
-  const rev = Number(document.getElementById('roiRevenue').value) || 0;
-  const cost = Number(document.getElementById('roiCost').value) || 0;
+  const sel = document.getElementById('providerSelect');
+  const opt = sel.options[sel.selectedIndex];
+  const providerPrice = opt && opt.value ? parseFloat(opt.dataset.price) : NaN;
+  const count = Number(document.getElementById('count').value) || 0;
+  const hrs = hoursOf(document.getElementById('duration').value);
+  const gpuHours = count * hrs;
 
-  if (cost <= 0) {
-    document.getElementById('roiPercent').textContent = '–';
-    document.getElementById('roiReturn').textContent = '–';
-    document.getElementById('roiMessage').textContent = '–';
-    document.getElementById('roiPercent').className = 'metric-value';
-    document.getElementById('roiReturn').className = 'metric-value';
-    document.getElementById('roiMessage').className = 'result-value';
+  const providerEl = document.getElementById('roiProviderPrice');
+  const avgEl = document.getElementById('roiMarketAvg');
+  const pctEl = document.getElementById('roiPercent');
+  const savEl = document.getElementById('roiSavings');
+
+  providerEl.textContent = isFinite(providerPrice) ? fmtMoney(providerPrice) + '/hr' : '–';
+  avgEl.textContent = isFinite(marketAvg) ? fmtMoney(marketAvg) + '/hr' : '–';
+
+  if (!isFinite(providerPrice) || !isFinite(marketAvg)) {
+    pctEl.textContent = '–';
+    pctEl.className = 'metric-value';
+    savEl.textContent = '–';
+    savEl.className = 'result-value';
     return;
   }
 
-  const ret = rev - cost;
-  const roi = (ret / cost) * 100;
+  const diff = marketAvg - providerPrice;               // $/hr
+  const roiPct = (diff / providerPrice) * 100;          // %
+  const savings = diff * gpuHours;                      // $
 
-  const pctEl = document.getElementById('roiPercent');
-  const retEl = document.getElementById('roiReturn');
-  const msgEl = document.getElementById('roiMessage');
+  pctEl.textContent = roiPct.toFixed(1) + '%';
+  pctEl.className = 'metric-value ' + (roiPct >= 0 ? 'positive' : 'negative');
 
-  pctEl.textContent = roi.toFixed(1) + '%';
-  retEl.textContent = fmtMoney(ret);
-
-  const positive = roi >= 0;
-  pctEl.className = 'metric-value ' + (positive ? 'positive' : 'negative');
-  retEl.className = 'metric-value ' + (positive ? 'positive' : 'negative');
-  msgEl.className = 'result-value ' + (positive ? 'positive' : 'negative');
-  msgEl.textContent = positive ? 'Profitable (positive return)' : 'Unprofitable (negative return)';
+  savEl.textContent = fmtMoney(savings);
+  savEl.className = 'result-value ' + (savings >= 0 ? 'positive' : 'negative');
 }
 
 // ========= Workload Estimator =========
@@ -500,17 +488,14 @@ function calculateWorkload(){
 
 // ========= Listeners & Boot =========
 function setupListeners(){
-  document.getElementById('region').addEventListener('change', renderIndex);
-  document.getElementById('category').addEventListener('change', renderIndex);
-  document.getElementById('btnRefresh').addEventListener('click', renderIndex);
-  
-  document.getElementById('providerSelect').addEventListener('change', calculateCost);
-  document.getElementById('count').addEventListener('input', calculateCost);
-  document.getElementById('duration').addEventListener('change', calculateCost);
+  document.getElementById('region').addEventListener('change', ()=>{ renderIndex(); });
+  document.getElementById('category').addEventListener('change', ()=>{ renderIndex(); });
+  document.getElementById('btnRefresh').addEventListener('click', ()=>{ renderIndex(); });
 
-  document.getElementById('roiRevenue').addEventListener('input', calculateROI);
-  document.getElementById('roiCost').addEventListener('input', calculateROI);
-  
+  document.getElementById('providerSelect').addEventListener('change', ()=>{ calculateCost(); });
+  document.getElementById('count').addEventListener('input', ()=>{ calculateCost(); });
+  document.getElementById('duration').addEventListener('change', ()=>{ calculateCost(); });
+
   document.getElementById('btnWorkload').addEventListener('click', calculateWorkload);
   document.getElementById('workloadGPUHours').addEventListener('input', calculateWorkload);
   document.getElementById('workloadUnit').addEventListener('change', calculateWorkload);
@@ -523,10 +508,12 @@ async function boot(){
   renderLeaderboards();
   renderProviderDropdown();
   setupListeners();
+  calculateROI(); // initial state
 }
 boot();
 </script>
 </body>
 </html>
+
 
 
