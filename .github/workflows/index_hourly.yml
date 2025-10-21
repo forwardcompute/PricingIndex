@@ -68,18 +68,18 @@ jobs:
             echo '<!doctype html><meta charset="utf-8"><title>Forward Compute Index</title><body style="font:14px system-ui;padding:24px;color:#e7edf3;background:#0f1216"><h1>Forward Compute Index</h1><p>No dashboard found. Add <code>docs/index.html</code> to the repo.</p></body>' > public/index.html
           fi
           
-          cp -f data/derived/*.csv public/data/derived/ 2>/dev/null || true
-          cp -f data/history/*.csv public/data/history/ 2>/dev/null || true
-          cp -f hcpi/*.json public/hcpi/ 2>/dev/null || true
-          cp -f hcpi/*history*.csv public/hcpi/ 2>/dev/null || true
+          # Copy files with verification
+          cp -v data/derived/*.csv public/data/derived/ || true
+          cp -v data/history/*.csv public/data/history/ || true
+          cp -v hcpi/*.json public/hcpi/ || true
+          cp -v hcpi/*history*.csv public/hcpi/ || true
+          
+          echo "==== Verifying CSV line count ===="
+          wc -l data/derived/provider_scores_latest.csv
+          wc -l public/data/derived/provider_scores_latest.csv
           
           echo "==== public/ tree ===="
           find public -maxdepth 3 -type f -print
-          
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: public
 
   deploy:
     needs: build-and-bundle
