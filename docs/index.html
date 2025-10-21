@@ -280,7 +280,7 @@ async function loadAll(){
   marketAvg = allPrices.length ? (allPrices.reduce((a,b)=>a+b,0) / allPrices.length) : NaN;
 }
 
-// ========= Categories (for leaderboards/labels) =========
+// ========= Categories (labels + matching) =========
 const PROVIDER_CATEGORY = {
   "Big 3 Hyperscalers": new Set(["AWS","GCP","Azure","Google Cloud","Microsoft Azure"]),
   "Major GPU Clouds":   new Set(["CoreWeave","Lambda Labs","Crusoe","RunPod","Paperspace","FluidStack","Nebius"]),
@@ -293,17 +293,51 @@ const getCategory = (name) => {
   }
   return "Other";
 };
+// Category filter (for provider counts etc.)
+const inCategory = (name, cat) => {
+  if (cat === 'All') return true;
+  const set = PROVIDER_CATEGORY[cat];
+  if (!set) return true;
+  const n = (name || '').toLowerCase();
+  for (const v of set) if (n.includes(v.toLowerCase())) return true;
+  return false;
+};
 
-// ========= Index + Header =========
+// ========= Index + Header (CATEGORY-AWARE) =========
 function currentIndex(){
   const region = document.getElementById('region').value;
+  const cat    = document.getElementById('category').value;
+
+  // updated timestamp
   const ts = full?.metadata?.timestamp || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
+
+  // show provider count for selected category (fallback to all)
+  const filteredProviders = new Set(
+    scores.filter(r => inCategory(r.provider, cat)).map(r => r.provider)
+  );
+  const fallbackCount = filteredProviders.size || new Set(scores.map(r=>r.provider)).size;
   const metaCount = full?.metadata?.unique_providers;
-  const fallbackCount = new Set(scores.map(r=>r.provider)).size;
-  const uniqueCount = isFinite(metaCount) ? metaCount : fallbackCount;
-  document.getElementById('providerCount').textContent = `${uniqueCount} providers tracked`;
-  if (region === 'US (All)') return isFinite(full.us_index) ? full.us_index : NaN;
+  document.getElementById('providerCount').textContent =
+    `${(cat === 'All' && isFinite(metaCount)) ? metaCount : fallbackCount} providers tracked`;
+
+  // category-specific index if a category is selected
+  if (cat !== 'All') {
+    const cats = full?.category_indices || {};
+    const item = cats[cat] || {};
+    if (region === 'US (All)') {
+      return isFinite(item.category_index) ? item.category_index : NaN;
+    }
+    const byReg = item.regional_indices || {};
+    return isFinite(byReg[region]) ? byReg[region]
+         : isFinite(item.category_index) ? item.category_index
+         : NaN;
+  }
+
+  // All categories
+  if (region === 'US (All)') {
+    return isFinite(full.us_index) ? full.us_index : NaN;
+  }
   const reg = full.regional_indices ? full.regional_indices[region] : undefined;
   return isFinite(reg) ? reg : NaN;
 }
@@ -517,4 +551,5 @@ boot();
 </script>
 </body>
 </html>
+
 
