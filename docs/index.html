@@ -46,6 +46,13 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
 .provider-info{flex:1}
 .provider-leader-name{font-weight:600;margin-bottom:2px}
 .category-badge{display:inline-block;padding:2px 8px;background:#1e2634;border-radius:4px;font-size:11px;color:var(--sub)}
+.insight-card{flex:1;min-width:200px;background:var(--muted);border:1px solid #2c3240;border-radius:8px;padding:12px;display:flex;align-items:center;gap:12px}
+.insight-icon{font-size:24px;flex-shrink:0}
+.insight-content{flex:1}
+.insight-label{font-size:11px;color:var(--sub);margin-bottom:2px}
+.insight-value{font-size:16px;font-weight:600;color:var(--text)}
+.use-provider-btn{background:var(--accent);color:#052535;border:none;border-radius:4px;padding:4px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-top:4px;transition:opacity .2s}
+.use-provider-btn:hover{opacity:.85}
 </style>
 </head>
 <body>
@@ -80,6 +87,12 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       </div>
       <button id="btnRefresh" style="align-self:flex-end">Update</button>
     </div>
+  </div>
+
+  <!-- Smart Insights -->
+  <div class="card" style="background:linear-gradient(135deg, #1a2533 0%, #171b21 100%);border-color:#2a3744">
+    <h3 style="margin-bottom:16px">💡 Smart Insights</h3>
+    <div id="insights" class="row" style="gap:12px"></div>
   </div>
 
   <!-- Leaderboards -->
@@ -418,7 +431,7 @@ function renderLeaderboards(){
     if (!inCat.length) return '';
     const leader = inCat[0];
     return `
-      <div class="leaderboard-item">
+      <div class="leaderboard-item" style="cursor:pointer" onclick="useProvider('${leader.name}', ${leader.avgPrice})">
         <div class="rank gold">1</div>
         <div class="provider-info">
           <div class="provider-leader-name">${leader.name}</div>
@@ -435,7 +448,7 @@ function renderLeaderboards(){
   const overallHTML = top5.map((p,i)=>{
     const rankClass = i===0 ? 'gold' : i===1 ? 'silver' : i===2 ? 'bronze' : '';
     return `
-      <div class="leaderboard-item">
+      <div class="leaderboard-item" style="cursor:pointer" onclick="useProvider('${p.name}', ${p.avgPrice})">
         <div class="rank ${rankClass}">${i+1}</div>
         <div class="provider-info">
           <div class="provider-leader-name">${p.name}</div>
@@ -446,6 +459,71 @@ function renderLeaderboards(){
     `;
   }).join('');
   document.getElementById('overallLeaderboard').innerHTML = overallHTML || '<div class="small">No data</div>';
+}
+
+function useProvider(name, price){
+  const sel = document.getElementById('providerSelect');
+  sel.value = name;
+  calculateCost();
+  calculateProfit();
+  // Smooth scroll to calculator
+  document.getElementById('providerSelect').scrollIntoView({behavior: 'smooth', block: 'center'});
+}
+
+window.useProvider = useProvider;
+
+function renderInsights(){
+  if (!allProviders.length) return;
+  
+  const cheapest = allProviders[0];
+  const mostExpensive = allProviders[allProviders.length - 1];
+  const avgPrice = allProviders.reduce((sum, p) => sum + p.avgPrice, 0) / allProviders.length;
+  const spread = mostExpensive.avgPrice - cheapest.avgPrice;
+  const spreadPct = ((spread / mostExpensive.avgPrice) * 100).toFixed(0);
+  
+  // Find best value in popular category
+  const majorGPU = allProviders.filter(p => p.category === "Major GPU Clouds").sort((a,b) => a.avgPrice - b.avgPrice)[0];
+  
+  const insights = [
+    {
+      icon: '⚡',
+      label: 'Cheapest Provider',
+      value: `${cheapest.name} • ${fmtMoney(cheapest.avgPrice)}/hr`,
+      action: `<button class="use-provider-btn" onclick="useProvider('${cheapest.name}', ${cheapest.avgPrice})">Use This</button>`
+    },
+    {
+      icon: '📊',
+      label: 'Market Average',
+      value: `${fmtMoney(avgPrice)}/hr`,
+      subtext: `${spreadPct}% price spread across providers`
+    },
+    {
+      icon: '🏆',
+      label: 'Best Value (Major Clouds)',
+      value: majorGPU ? `${majorGPU.name} • ${fmtMoney(majorGPU.avgPrice)}/hr` : 'N/A',
+      action: majorGPU ? `<button class="use-provider-btn" onclick="useProvider('${majorGPU.name}', ${majorGPU.avgPrice})">Use This</button>` : ''
+    },
+    {
+      icon: '💰',
+      label: 'Potential Savings',
+      value: `${fmtMoney(avgPrice - cheapest.avgPrice)}/GPU-hr`,
+      subtext: `vs market average`
+    }
+  ];
+  
+  const html = insights.map(i => `
+    <div class="insight-card">
+      <div class="insight-icon">${i.icon}</div>
+      <div class="insight-content">
+        <div class="insight-label">${i.label}</div>
+        <div class="insight-value">${i.value}</div>
+        ${i.subtext ? `<div style="font-size:11px;color:var(--sub);margin-top:2px">${i.subtext}</div>` : ''}
+        ${i.action || ''}
+      </div>
+    </div>
+  `).join('');
+  
+  document.getElementById('insights').innerHTML = html;
 }
 
 function renderProviderDropdown(){
