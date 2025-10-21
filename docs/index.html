@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Forward Compute Index</title>
 <link rel="icon" href="data:,">
+<!-- Chart.js + time adapter -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 <style>
 :root{--bg:#0f1216;--panel:#171b21;--muted:#202532;--text:#e7edf3;--sub:#9fb0c3;--accent:#7bd7ff;--ok:#27d980;--warn:#ffa726;}
 *{box-sizing:border-box}
@@ -50,6 +53,13 @@ button:hover{opacity:.85}
 .insight-label{font-size:11px;color:var(--sub);margin-bottom:2px}
 .insight-value{font-size:16px;font-weight:600;color:var(--text)}
 footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
+
+/* Pills for range selector */
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{background:#0e1218;border:1px solid #2a3040;color:#b9c7d7;border-radius:12px;padding:8px 12px;font-size:13px;cursor:pointer;user-select:none}
+.pill.active{background:#111722;border-color:#3a4256;box-shadow:inset 0 0 0 2px #1a2130;color:#e7edf3}
+.chartHeader{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.chartSub{color:var(--sub);font-size:12px}
 </style>
 </head>
 <body>
@@ -85,6 +95,29 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
       <button id="btnRefresh" style="align-self:flex-end">Update</button>
     </div>
   </div>
+
+  <!-- ================= Index History (overall) ================= -->
+  <div class="card">
+    <div class="chartHeader">
+      <h3 style="margin:0">Index — History</h3>
+      <span id="hcpiPts" class="chartSub">– data points</span>
+      <div style="margin-left:auto" class="pills" id="rangePills">
+        <div class="pill" data-range="1H">1H</div>
+        <div class="pill" data-range="4H">4H</div>
+        <div class="pill" data-range="12H">12H</div>
+        <div class="pill active" data-range="1D">1D</div>
+        <div class="pill" data-range="3D">3D</div>
+        <div class="pill" data-range="1W">1W</div>
+        <div class="pill" data-range="1M">1M</div>
+        <div class="pill" data-range="3M">3M</div>
+        <div class="pill" data-range="ALL">All</div>
+      </div>
+    </div>
+    <div style="height:320px">
+      <canvas id="hcpiHistory"></canvas>
+    </div>
+  </div>
+  <!-- ========================================================== -->
 
   <!-- Smart Insights -->
   <div class="card" style="background:linear-gradient(135deg, #1a2533 0%, #171b21 100%);border-color:#2a3744">
@@ -222,8 +255,120 @@ footer{margin-top:24px;color:var(--sub);font-size:12px;text-align:center}
     </div>
   </div>
 
-  <footer>Data sources: <code>hcpi/hcpi_latest_full.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
+  <footer>Data sources: <code>hcpi/hcpi_latest_full.json</code>, <code>hcpi/hcpi_history.json</code>, <code>data/derived/provider_scores_latest.csv</code></footer>
 
+<!-- ===================== HISTORY CHART SCRIPT ===================== -->
+<script>
+let hcpiChart, hcpiAllPoints = [];
+
+const RANGES = {
+  "1H": 60*60*1000,
+  "4H": 4*60*60*1000,
+  "12H": 12*60*60*1000,
+  "1D": 24*60*60*1000,
+  "3D": 3*24*60*60*1000,
+  "1W": 7*24*60*60*1000,
+  "1M": 30*24*60*60*1000,
+  "3M": 90*24*60*60*1000,
+  "ALL": Infinity
+};
+
+async function loadHistory() {
+  const r = await fetch('hcpi/hcpi_history.json?t=' + Date.now());
+  if (!r.ok) return [];
+  const data = await r.json();
+  return (Array.isArray(data) ? data : [])
+    .map(d => ({ x: new Date(d.timestamp), y: Number(d.us_index ?? d.US ?? NaN) }))
+    .filter(p => isFinite(p.y));
+}
+
+function setActivePill(key){
+  document.querySelectorAll('#rangePills .pill').forEach(el=>{
+    el.classList.toggle('active', el.dataset.range === key);
+  });
+}
+
+function applyRange(key){
+  setActivePill(key);
+  const now = Date.now();
+  const windowMs = RANGES[key] ?? RANGES["1D"];
+  const data = windowMs === Infinity
+    ? hcpiAllPoints
+    : hcpiAllPoints.filter(p => now - p.x.getTime() <= windowMs);
+
+  const pts = data.length;
+  document.getElementById('hcpiPts').textContent =
+    (pts ? pts : '0') + ' data points • ' + key;
+
+  hcpiChart.data.datasets[0].data = data;
+  hcpiChart.update();
+}
+
+async function initHistoryChart() {
+  hcpiAllPoints = await loadHistory();
+
+  const ctx = document.getElementById('hcpiHistory').getContext('2d');
+  const gradient = ctx.createLinearGradient(0,0,0,300);
+  gradient.addColorStop(0, 'rgba(123,215,255,0.35)');
+  gradient.addColorStop(1, 'rgba(123,215,255,0.02)');
+
+  hcpiChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'US Index',
+        data: [],
+        borderColor: 'rgba(123,215,255,0.9)',
+        backgroundColor: gradient,
+        fill: true,
+        borderWidth: 2,
+        tension: 0.3,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          time: { tooltipFormat: 'MMM d, HH:mm' },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: { color: '#9fb0c3' }
+        },
+        y: {
+          title: { display: true, text: '$ per GPU-hour' },
+          grid: { color: 'rgba(255,255,255,0.06)' },
+          ticks: { color: '#9fb0c3' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => '$' + (ctx.parsed.y ?? 0).toFixed(2)
+          }
+        }
+      }
+    }
+  });
+
+  // default view
+  applyRange('1D');
+
+  // hook up pills
+  document.getElementById('rangePills').addEventListener('click', (e)=>{
+    const key = e.target?.dataset?.range;
+    if (key) applyRange(key);
+  });
+}
+
+initHistoryChart();
+</script>
+<!-- =================== END HISTORY CHART SCRIPT =================== -->
+
+<!-- =================== EXISTING DASHBOARD SCRIPT ================== -->
 <script>
 // ========= Helpers =========
 const fmtMoney = n => isFinite(n) ? '$' + Number(n).toFixed(2) : '–';
@@ -293,7 +438,6 @@ const getCategory = (name) => {
   }
   return "Other";
 };
-// Category filter (for provider counts etc.)
 const inCategory = (name, cat) => {
   if (cat === 'All') return true;
   const set = PROVIDER_CATEGORY[cat];
@@ -303,16 +447,14 @@ const inCategory = (name, cat) => {
   return false;
 };
 
-// ========= Index + Header (CATEGORY-AWARE) =========
+// ========= Index + Header =========
 function currentIndex(){
   const region = document.getElementById('region').value;
   const cat    = document.getElementById('category').value;
 
-  // updated timestamp
   const ts = full?.metadata?.timestamp || null;
   document.getElementById('updated').textContent = 'Updated: ' + (ts ? fmtUpdated(ts) : '–');
 
-  // show provider count for selected category (fallback to all)
   const filteredProviders = new Set(
     scores.filter(r => inCategory(r.provider, cat)).map(r => r.provider)
   );
@@ -321,7 +463,6 @@ function currentIndex(){
   document.getElementById('providerCount').textContent =
     `${(cat === 'All' && isFinite(metaCount)) ? metaCount : fallbackCount} providers tracked`;
 
-  // category-specific index if a category is selected
   if (cat !== 'All') {
     const cats = full?.category_indices || {};
     const item = cats[cat] || {};
@@ -334,7 +475,6 @@ function currentIndex(){
          : NaN;
   }
 
-  // All categories
   if (region === 'US (All)') {
     return isFinite(full.us_index) ? full.us_index : NaN;
   }
@@ -459,7 +599,6 @@ function calculateROI(){
   const roiEl      = document.getElementById('roiBasic');
   const rankEl     = document.getElementById('roiRank');
 
-  // utilisation row is dormant unless you later add it
   const utilRow = document.getElementById('roiUtilRow');
   utilRow.style.display = 'none';
 
@@ -471,12 +610,10 @@ function calculateROI(){
     return;
   }
 
-  // Basic ROI = 1 / price
   const roi = roiValuePerDollar(price);
   roiEl.textContent = isFinite(roi) ? roi.toFixed(3) : '–';
   roiEl.className = 'metric-value ' + (roi > 0 ? 'positive' : '');
 
-  // Rank vs all providers (higher ROI is better)
   const roiList = allProviders
     .map(p => ({ name: p.name, roi: roiValuePerDollar(p.avgPrice) }))
     .filter(x => isFinite(x.roi))
@@ -551,5 +688,4 @@ boot();
 </script>
 </body>
 </html>
-
 
