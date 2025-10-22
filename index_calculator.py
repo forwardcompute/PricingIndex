@@ -87,6 +87,16 @@ PROVIDER_CATEGORIES: Dict[str, List[str]] = {
 PRICE_MIN = 0.50
 PRICE_MAX = 20.00
 
+# Provider category weights for market-representative index
+# Based on estimated market share and actual enterprise usage
+PROVIDER_WEIGHTS = {
+    "Big 3 Hyperscalers": 2.5,    # AWS/Azure/GCP dominate enterprise usage
+    "Major GPU Clouds": 1.2,       # Growing segment with real scale
+    "Serverless": 1.0,             # Baseline
+    "Specialized": 0.7,            # Niche players, often limited availability
+    "Other": 0.5,                  # Unknown/unverified providers
+}
+
 
 # ==== Utilities ===============================================================
 
@@ -97,6 +107,31 @@ def categorize_provider(provider_name: str) -> str:
             if p.lower() in str(provider_name).lower():
                 return category
     return "Other"
+
+
+def apply_provider_weights(df: pd.DataFrame, use_weights: bool = True) -> pd.DataFrame:
+    """
+    Apply market-share based weights to GPU counts.
+    Creates 'weighted_gpu_count' column used for liquidity calculations.
+    
+    Args:
+        df: DataFrame with 'provider' and 'gpu_count' columns
+        use_weights: If True, apply market weights; if False, use equal weighting (1.0x)
+    
+    Returns:
+        DataFrame with added 'category' and 'weighted_gpu_count' columns
+    """
+    df = df.copy()
+    df["category"] = df["provider"].apply(categorize_provider)
+    
+    if use_weights:
+        df["weighted_gpu_count"] = (
+            df["gpu_count"] * df["category"].map(PROVIDER_WEIGHTS)
+        ).fillna(df["gpu_count"] * 0.5)  # Default to 0.5x for unmapped
+    else:
+        df["weighted_gpu_count"] = df["gpu_count"]
+    
+    return df
 
 
 def normalise_and_expand_regions(df: pd.DataFrame) -> pd.DataFrame:
@@ -134,7 +169,7 @@ def construct_regional_order_books(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     For each region, aggregate listings by price and sum GPU counts.
     Returns {region: DataFrame(price, q, num_providers)} where:
       - price is the unique price level
-      - q is the summed gpu_count at that price
+      - q is the summed weighted_gpu_count at that price
       - num_providers counts contributing rows at that price
     """
     order_books: Dict[str, pd.DataFrame] = {}
@@ -146,12 +181,12 @@ def construct_regional_order_books(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
 
         order_book = (
             region_data.groupby("price_hourly_usd")
-            .agg({"gpu_count": "sum", "provider": "count"})
+            .agg({"weighted_gpu_count": "sum", "provider": "count"})
             .reset_index()
             .rename(
                 columns={
                     "price_hourly_usd": "price",
-                    "gpu_count": "q",
+                    "weighted_gpu_count": "q",
                     "provider": "num_providers",
                 }
             )
@@ -300,16 +335,26 @@ def calculate_category_index(df: pd.DataFrame, category: str, lam: float = LAMBD
 
 # ==== Main calculator =========================================================
 
-def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True) -> Dict:
+def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, use_market_weights: bool = True) -> Dict:
     """
     Calculate the complete HCPI following ORNN methodology with guards.
 
     Expects df with columns:
         [provider, region, price_hourly_usd, gpu_count]
+        
+    Args:
+        df: DataFrame with pricing data
+        lam: Lambda parameter for exponential weighting
+        verbose: Print detailed calculation steps
+        use_market_weights: If True, apply market-share weights to providers (default True)
     """
     if verbose:
         print("=" * 70)
         print("CALCULATING ORNN US H100 COMPUTE PRICE INDEX (HCPI)")
+        if use_market_weights:
+            print("Using MARKET-WEIGHTED provider categories")
+        else:
+            print("Using EQUAL-WEIGHTED (all providers treated equally)")
         print("=" * 70)
 
     # Keep a copy for raw stats
@@ -348,11 +393,18 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True) 
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
+    # Apply market weights to GPU counts
+    df_clean = apply_provider_weights(df_clean, use_weights=use_market_weights)
+
     if verbose:
         print(f"Lambda parameter: {lam}")
         print(f"Total listings (raw): {len(df_raw)}; after clean: {len(df_clean)}")
         print(f"Unique providers (raw): {df_raw['provider'].nunique()}; after clean: {df_clean['provider'].nunique()}")
-        print(f"Total GPU count (clean): {df_clean['gpu_count'].sum():,.0f}\n")
+        print(f"Total GPU count (clean): {df_clean['gpu_count'].sum():,.0f}")
+        if use_market_weights:
+            print(f"Total weighted GPU count: {df_clean['weighted_gpu_count'].sum():,.0f}\n")
+        else:
+            print()
 
     # Step 1: Regional order books
     order_books = construct_regional_order_books(df_clean)
@@ -360,7 +412,7 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True) 
     if verbose:
         print("Regional Order Books:")
         for region, ob in order_books.items():
-            print(f"  {region}: {len(ob)} unique prices, {ob['q'].sum():,.0f} total GPUs")
+            print(f"  {region}: {len(ob)} unique prices, {ob['q'].sum():,.0f} total weighted GPUs")
         print()
 
     # Steps 2–5: Regional indices and liquidities
@@ -374,11 +426,12 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True) 
         regional_liquidities[region] = liquidity
 
         if index is not None:
+            region_data = df_clean[df_clean["region"] == region]
             regional_details[region] = {
                 "index": round(index, 4),
                 "liquidity": round(liquidity, 2),
                 "num_prices": int(len(order_book)),
-                "total_gpus": int(order_book["q"].sum()),
+                "total_gpus": int(region_data["gpu_count"].sum()),
                 "num_providers": int(order_book["num_providers"].sum()),
                 "price_range": {
                     "min": round(float(order_book["price"].min()), 2),
@@ -437,6 +490,8 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True) 
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "lambda": lam,
             "methodology": "ORNN",
+            "market_weighted": use_market_weights,
+            "provider_weights": PROVIDER_WEIGHTS if use_market_weights else None,
             "total_listings": int(len(df_clean)),
             "unique_providers": int(df_clean["provider"].nunique()),
             "unique_providers_raw": int(df_raw["provider"].nunique()),
@@ -517,6 +572,7 @@ def format_hcpi_report(result: Dict) -> str:
     tg = meta.get("total_gpus")
     report.append(f"Total GPU Count:       {tg:,}" if isinstance(tg, int) else f"Total GPU Count:  {tg}")
     report.append(f"Lambda Parameter:      {meta.get('lambda', 'N/A')}")
+    report.append(f"Market Weighted:       {meta.get('market_weighted', 'N/A')}")
     bounds = meta.get("price_bounds_applied")
     if bounds:
         report.append(f"Price Bounds:          [{bounds['min']}, {bounds['max']}] USD/hr")
@@ -593,7 +649,18 @@ if __name__ == "__main__":
         {"provider": "Foo",   "region": "US (All)",   "price_hourly_usd": 10.9, "gpu_count": 600},
     ])
 
-    result = calculate_hcpi(sample_data, verbose=True)
-    print(format_hcpi_report(result))
-    save_hcpi_results(result)
-    export_dashboard_json(result)
+    print("=" * 70)
+    print("MARKET-WEIGHTED INDEX (Default - Enterprise Representative)")
+    print("=" * 70 + "\n")
+    result_weighted = calculate_hcpi(sample_data, verbose=True, use_market_weights=True)
+    print("\n" + format_hcpi_report(result_weighted))
+    save_hcpi_results(result_weighted, prefix="hcpi_market")
+    
+    print("\n\n" + "=" * 70)
+    print("EQUAL-WEIGHTED INDEX (Broad - All Providers Equal)")
+    print("=" * 70 + "\n")
+    result_equal = calculate_hcpi(sample_data, verbose=True, use_market_weights=False)
+    print("\n" + format_hcpi_report(result_equal))
+    save_hcpi_results(result_equal, prefix="hcpi_broad")
+    
+    export_dashboard_json(result_weighted)
