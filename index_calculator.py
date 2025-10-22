@@ -89,12 +89,13 @@ PRICE_MAX = 20.00
 
 # Provider category weights for market-representative index
 # Based on estimated market share and actual enterprise usage
+# Values between 0.8-1.5x to balance market reality with competitive landscape
 PROVIDER_WEIGHTS = {
-    "Big 3 Hyperscalers": 2.5,    # AWS/Azure/GCP dominate enterprise usage
+    "Big 3 Hyperscalers": 1.5,    # AWS/Azure/GCP have large scale
     "Major GPU Clouds": 1.2,       # Growing segment with real scale
     "Serverless": 1.0,             # Baseline
-    "Specialized": 0.7,            # Niche players, often limited availability
-    "Other": 0.5,                  # Unknown/unverified providers
+    "Specialized": 0.9,            # Niche players but competitive pricing
+    "Other": 0.8,                  # Unknown/unverified providers
 }
 
 
