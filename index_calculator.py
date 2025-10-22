@@ -139,7 +139,7 @@ def normalise_and_expand_regions(df: pd.DataFrame) -> pd.DataFrame:
     Normalise region strings and expand aggregate US rows across all 3 US regions.
     - Replaces known aliases.
     - Rows labelled "US-ALL" are split into three rows (East/Central/West) with
-      gpu_count divided equally.
+      gpu_count and weighted_gpu_count (if present) divided equally.
     """
     df2 = df.copy()
 
@@ -152,6 +152,10 @@ def normalise_and_expand_regions(df: pd.DataFrame) -> pd.DataFrame:
         us_all = df2.loc[mask].copy()
         # Divide liquidity evenly across the three regions
         us_all["gpu_count"] = us_all["gpu_count"].astype(float) / 3.0
+        
+        # Also divide weighted_gpu_count if it exists
+        if "weighted_gpu_count" in us_all.columns:
+            us_all["weighted_gpu_count"] = us_all["weighted_gpu_count"].astype(float) / 3.0
 
         east = us_all.copy();  east["region"] = "US-East"
         cent = us_all.copy();  cent["region"] = "US-Central"
@@ -360,7 +364,11 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
     # Keep a copy for raw stats
     df_raw = df.copy()
 
-    # Region normalisation/expansion first
+    # Apply market weights to GPU counts BEFORE region expansion
+    # This prevents 3x multiplier bug when "US (All)" gets split into 3 regions
+    df = apply_provider_weights(df, use_weights=use_market_weights)
+
+    # Region normalisation/expansion
     df = normalise_and_expand_regions(df)
 
     # Validate & clean
@@ -392,9 +400,6 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
             "error": "No valid data after cleaning",
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
-
-    # Apply market weights to GPU counts
-    df_clean = apply_provider_weights(df_clean, use_weights=use_market_weights)
 
     if verbose:
         print(f"Lambda parameter: {lam}")
