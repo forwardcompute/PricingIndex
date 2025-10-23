@@ -268,7 +268,12 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         print("-" * 70 + "\n")
 
     df_idx = _prepare_index_input(df_scraped)
-    hcpi_result = calculate_hcpi(df_idx, verbose=verbose)
+    hcpi_result = calculate_hcpi(
+        df_idx, 
+        verbose=verbose,
+        apply_smoothing=True,
+        smoothing_window=24
+    )
 
     # ── Write artifacts
     try:
