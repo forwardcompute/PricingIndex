@@ -70,9 +70,9 @@ jobs:
       - name: Smooth historical index data
         run: |
           set -e
-          if [ -f scripts/smooth_historical_data.py ] && [ -f hcpi/hcpi_history.json ]; then
+          if [ -f smooth_historical_data.py ] && [ -f hcpi/hcpi_history.json ]; then
             echo "Applying 48-hour rolling average smoothing to hcpi/hcpi_history.json…"
-            python scripts/smooth_historical_data.py --in-place --window 48
+            python smooth_historical_data.py --in-place --window 48
             echo "Smoothing complete. Index volatility reduced."
           else
             echo "Smoothing script or hcpi_history.json not present, skipping."
