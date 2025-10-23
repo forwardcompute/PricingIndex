@@ -66,13 +66,13 @@ jobs:
             echo "No legacy backfill needed (script or *_history.csv not present)."
           fi
 
-      # NEW: Apply smoothing to historical index data for stability
+      # NEW: Apply 48-hour smoothing to historical index data for stability
       - name: Smooth historical index data
         run: |
           set -e
-          if [ -f scripts/smooth_historical_index.py ] && [ -f hcpi/hcpi_history.json ]; then
-            echo "Applying 24-hour rolling average smoothing to hcpi/hcpi_history.json…"
-            python scripts/smooth_historical_index.py --in-place --window 24
+          if [ -f scripts/smooth_historical_data.py ] && [ -f hcpi/hcpi_history.json ]; then
+            echo "Applying 48-hour rolling average smoothing to hcpi/hcpi_history.json…"
+            python scripts/smooth_historical_data.py --in-place --window 48
             echo "Smoothing complete. Index volatility reduced."
           else
             echo "Smoothing script or hcpi_history.json not present, skipping."
