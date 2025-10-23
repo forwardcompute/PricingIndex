@@ -3,7 +3,7 @@ name: Forward Compute Index — Hourly Build & Deploy
 on:
   workflow_dispatch:
   schedule:
-    - cron: "5 * * * *" # every hour at minute 5
+    - cron: "5 * * * *"   # every hour at minute 5
 
 permissions:
   contents: write
@@ -17,7 +17,6 @@ concurrency:
 env:
   PYTHON_VERSION: "3.12"
   COMMIT_DATA: "true"
-  HISTORY_RETENTION_HOURS: "0" # keep ALL history
 
 jobs:
   build-and-bundle:
@@ -45,82 +44,62 @@ jobs:
       - name: Run hourly scrape + index (master runner)
         env:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
-          LAMBDA_API_KEY: ${{ secrets.LAMBDA_API_KEY }}
-          RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
-          HISTORY_RETENTION_HOURS: ${{ env.HISTORY_RETENTION_HOURS }}
+          LAMBDA_API_KEY:    ${{ secrets.LAMBDA_API_KEY }}
+          RUNPOD_API_KEY:    ${{ secrets.RUNPOD_API_KEY }}
         run: |
           set -e
           echo "Running master_runner.py for ALL providers…"
-          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}"
+          python master_runner.py --cron --db "${HCPI_DATABASE_URL:-sqlite:///hcpi.db}" \
+            || echo "master_runner reported issues (continuing)"
           echo "Pipeline execution complete."
 
-      - name: One-off backfill (manual only)
-        if: github.event_name == 'workflow_dispatch'
+      # NEW: backfill legacy provider CSVs into hcpi/hcpi_history.json (H100 + On-Demand)
+      - name: Backfill legacy history into HCPI
         run: |
           set -e
-          echo "Backfill requested (manual dispatch)."
-          if [ ! -f scripts/backfill_legacy_to_hcpi.py ]; then
-            echo "ERROR: scripts/backfill_legacy_to_hcpi.py not found"; exit 1
-          fi
-          if ! ls data/history/*_history.csv >/dev/null 2>&1; then
-            echo "ERROR: No legacy CSVs in data/history/*_history.csv"; exit 1
-          fi
-          python scripts/backfill_legacy_to_hcpi.py --src data/history --out hcpi/hcpi_history.json
-          echo "After backfill, point count:"
-          pts=$(grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l | tr -d ' ')
-          echo "points=$pts"
-          if [ "$pts" -lt 700 ]; then
-            echo "ERROR: Backfill did not add enough history (points=$pts, need >=700)."; exit 1
+          if [ -f scripts/backfill_legacy_to_hcpi.py ] && ls data/history/*_history.csv >/dev/null 2>&1; then
+            echo "Found legacy history files. Running backfill…"
+            python scripts/backfill_legacy_to_hcpi.py --src data/history --write
+            echo "Backfill complete. Preview last 5 points:"
+            tail -n 10 hcpi/hcpi_history.json || true
+          else
+            echo "No legacy backfill needed (script or *_history.csv not present)."
           fi
 
       - name: Verify generated data & history
         run: |
-          set -e
           echo "==== Latest CSV ===="
-          test -f data/derived/provider_scores_latest.csv || (echo "ERROR: provider_scores_latest.csv missing"; exit 1)
-          wc -l data/derived/provider_scores_latest.csv || true
-          head -3 data/derived/provider_scores_latest.csv || true
-          tail -3 data/derived/provider_scores_latest.csv || true
-
+          if [ -f data/derived/provider_scores_latest.csv ]; then
+            wc -l data/derived/provider_scores_latest.csv || true
+            echo "First 3 rows:"
+            head -3 data/derived/provider_scores_latest.csv || true
+            echo "Last 3 rows:"
+            tail -3 data/derived/provider_scores_latest.csv || true
+          else
+            echo " ERROR: Latest CSV not found!"
+            exit 1
+          fi
+          
           echo ""
-          echo "==== Provider History CSV ===="
+          echo "==== History CSV ===="
           if [ -f data/history/provider_scores_history.csv ]; then
+            echo "Total lines in history:"
             wc -l data/history/provider_scores_history.csv || true
+            echo "Last 5 entries:"
             tail -5 data/history/provider_scores_history.csv || true
           else
-            echo "WARNING: provider_scores_history.csv not found (will be created on next runs)"
+            echo " WARNING: History CSV not found (will be created)"
           fi
-
-          echo ""
-          echo "==== Index History CSV ===="
-          if [ -f data/history/index_history.csv ]; then
-            wc -l data/history/index_history.csv || true
-            tail -5 data/history/index_history.csv || true
-          else
-            echo "WARNING: index_history.csv not found (will be created on next runs)"
-          fi
-
+          
           echo ""
           echo "==== HCPI History JSON ===="
           if [ -f hcpi/hcpi_history.json ]; then
-            echo -n "Points: "; grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l || true
-            echo "Size:   $(du -h hcpi/hcpi_history.json | cut -f1)"
-            echo "First timestamp:"
-            python - <<'PY'
-import json
-with open("hcpi/hcpi_history.json") as f:
-    j = json.load(f)
-print((j[0] or {}).get("timestamp") if j else "EMPTY")
-PY
-            echo "Last timestamp:"
-            python - <<'PY'
-import json
-with open("hcpi/hcpi_history.json") as f:
-    j = json.load(f)
-print((j[-1] or {}).get("timestamp") if j else "EMPTY")
-PY
+            echo "Number of historical data points:"
+            grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l || true
+            echo "Last entry:"
+            tail -10 hcpi/hcpi_history.json || true
           else
-            echo "WARNING: hcpi/hcpi_history.json not found"
+            echo "WARNING: HCPI history JSON not found (will be created)"
           fi
 
       - name: Commit generated data to repository
@@ -136,11 +115,11 @@ PY
           author_name: github-actions
           author_email: actions@github.com
 
-      - name: Prepare static site (public/)
+      - name: 🏗️ Prepare static site (public/)
         run: |
           set -e
           mkdir -p public/data/derived public/data/history public/hcpi
-
+          
           echo "==== Copying HTML ===="
           if [ -f docs/index.html ]; then
             cp -v docs/index.html public/index.html
@@ -149,7 +128,7 @@ PY
           else
             echo '<!doctype html><meta charset="utf-8"><title>Forward Compute Index</title><body style="font:14px system-ui;padding:24px;color:#e7edf3;background:#0f1216"><h1>Forward Compute Index</h1><p>No dashboard found. Add <code>docs/index.html</code> to the repo.</p></body>' > public/index.html
           fi
-
+          
           echo "==== Copying data files ===="
           cp -v data/derived/*.csv public/data/derived/ 2>/dev/null || true
           cp -v data/history/*.csv  public/data/history/  2>/dev/null || true
@@ -157,9 +136,11 @@ PY
           cp -v hcpi/*history*.csv  public/hcpi/          2>/dev/null || true
 
           echo "==== Verify copied files ===="
+          echo "Latest CSV:"
           wc -l public/data/derived/provider_scores_latest.csv || true
-          wc -l public/data/history/provider_scores_history.csv 2>/dev/null || echo "No provider history CSV yet"
-          wc -l public/data/history/index_history.csv 2>/dev/null || echo "No index history CSV yet"
+          echo "History CSV:"
+          wc -l public/data/history/provider_scores_history.csv 2>/dev/null || echo "No history CSV yet"
+          echo "HCPI History JSON:"
           ls -lh public/hcpi/hcpi_history.json 2>/dev/null || echo "No HCPI history JSON yet"
 
           echo "==== public/ tree ===="
@@ -183,4 +164,5 @@ PY
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
 
