@@ -17,6 +17,8 @@ concurrency:
 env:
   PYTHON_VERSION: "3.12"
   COMMIT_DATA: "true"
+  # IMPORTANT: do not trim history; keep ALL points (set to "8760" for 1 year)
+  HISTORY_RETENTION_HOURS: "0"
 
 jobs:
   build-and-bundle:
@@ -46,6 +48,8 @@ jobs:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
           LAMBDA_API_KEY:    ${{ secrets.LAMBDA_API_KEY }}
           RUNPOD_API_KEY:    ${{ secrets.RUNPOD_API_KEY }}
+          # Retention also available to the job
+          HISTORY_RETENTION_HOURS: ${{ env.HISTORY_RETENTION_HOURS }}
         run: |
           set -e
           echo "Running master_runner.py for ALL providers…"
@@ -53,17 +57,17 @@ jobs:
             || echo "master_runner reported issues (continuing)"
           echo "Pipeline execution complete."
 
-      # NEW: backfill legacy provider CSVs into hcpi/hcpi_history.json (H100 + On-Demand)
-      - name: Backfill legacy history into HCPI
+      # Backfill should NOT run hourly — only when manually dispatched
+      - name: One-off backfill (manual only)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           set -e
           if [ -f scripts/backfill_legacy_to_hcpi.py ] && ls data/history/*_history.csv >/dev/null 2>&1; then
-            echo "Found legacy history files. Running backfill…"
+            echo "Running one-off backfill…"
             python scripts/backfill_legacy_to_hcpi.py --src data/history --write
-            echo "Backfill complete. Preview last 5 points:"
-            tail -n 10 hcpi/hcpi_history.json || true
+            echo "Backfill complete."
           else
-            echo "No legacy backfill needed (script or *_history.csv not present)."
+            echo "No legacy backfill script or *_history.csv files detected; skipping."
           fi
 
       - name: Verify generated data & history
@@ -71,35 +75,39 @@ jobs:
           echo "==== Latest CSV ===="
           if [ -f data/derived/provider_scores_latest.csv ]; then
             wc -l data/derived/provider_scores_latest.csv || true
-            echo "First 3 rows:"
             head -3 data/derived/provider_scores_latest.csv || true
-            echo "Last 3 rows:"
             tail -3 data/derived/provider_scores_latest.csv || true
           else
             echo " ERROR: Latest CSV not found!"
             exit 1
           fi
-          
+
           echo ""
-          echo "==== History CSV ===="
+          echo "==== Provider History CSV ===="
           if [ -f data/history/provider_scores_history.csv ]; then
-            echo "Total lines in history:"
             wc -l data/history/provider_scores_history.csv || true
-            echo "Last 5 entries:"
             tail -5 data/history/provider_scores_history.csv || true
           else
-            echo " WARNING: History CSV not found (will be created)"
+            echo " WARNING: Provider history CSV not found (will be created)"
           fi
-          
+
+          echo ""
+          echo "==== Index History CSV ===="
+          if [ -f data/history/index_history.csv ]; then
+            wc -l data/history/index_history.csv || true
+            tail -5 data/history/index_history.csv || true
+          else
+            echo " WARNING: Index history CSV not found (will be created)"
+          fi
+
           echo ""
           echo "==== HCPI History JSON ===="
           if [ -f hcpi/hcpi_history.json ]; then
-            echo "Number of historical data points:"
-            grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l || true
-            echo "Last entry:"
-            tail -10 hcpi/hcpi_history.json || true
+            echo -n "Points: "; grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l || true
+            echo "First 3 lines:"; head -n 3 hcpi/hcpi_history.json || true
+            echo "Last 10 lines:"; tail -n 10 hcpi/hcpi_history.json || true
           else
-            echo "WARNING: HCPI history JSON not found (will be created)"
+            echo " WARNING: HCPI history JSON not found (will be created)"
           fi
 
       - name: Commit generated data to repository
@@ -119,7 +127,7 @@ jobs:
         run: |
           set -e
           mkdir -p public/data/derived public/data/history public/hcpi
-          
+
           echo "==== Copying HTML ===="
           if [ -f docs/index.html ]; then
             cp -v docs/index.html public/index.html
@@ -128,7 +136,7 @@ jobs:
           else
             echo '<!doctype html><meta charset="utf-8"><title>Forward Compute Index</title><body style="font:14px system-ui;padding:24px;color:#e7edf3;background:#0f1216"><h1>Forward Compute Index</h1><p>No dashboard found. Add <code>docs/index.html</code> to the repo.</p></body>' > public/index.html
           fi
-          
+
           echo "==== Copying data files ===="
           cp -v data/derived/*.csv public/data/derived/ 2>/dev/null || true
           cp -v data/history/*.csv  public/data/history/  2>/dev/null || true
@@ -138,8 +146,10 @@ jobs:
           echo "==== Verify copied files ===="
           echo "Latest CSV:"
           wc -l public/data/derived/provider_scores_latest.csv || true
-          echo "History CSV:"
-          wc -l public/data/history/provider_scores_history.csv 2>/dev/null || echo "No history CSV yet"
+          echo "Provider History CSV:"
+          wc -l public/data/history/provider_scores_history.csv 2>/dev/null || echo "No provider history CSV yet"
+          echo "Index History CSV:"
+          wc -l public/data/history/index_history.csv 2>/dev/null || echo "No index history CSV yet"
           echo "HCPI History JSON:"
           ls -lh public/hcpi/hcpi_history.json 2>/dev/null || echo "No HCPI history JSON yet"
 
@@ -164,3 +174,4 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
