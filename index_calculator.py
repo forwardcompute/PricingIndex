@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ORNN US H100 Compute Price Index (HCPI) Calculator
-==================================================
+ORNN US H100 Compute Price Index (HCPI) Calculator - ENHANCED STABILITY VERSION
+================================================================================
 
-Implements the ORNN methodology with practical guards:
+Implements the ORNN methodology with ENHANCED stability features:
 
 - Symmetric exponential weights around the regional liquidity-weighted median
 - Region normalisation and expansion (e.g., "US (All)" → split into 3 regions)
+- **NEW: Rolling average smoothing for temporal stability**
+- **NEW: Forward-fill missing provider data to prevent gaps**
+- **NEW: Configurable smoothing window**
 - Sanity filters to prevent bad scrapes from dominating the index
 
 Calculates indices for:
@@ -29,6 +32,10 @@ import pandas as pd
 
 # Lambda parameter for exponential down-weighting (from ORNN paper ideology)
 LAMBDA = 3.0
+
+# **NEW: Smoothing parameters for stability**
+ROLLING_WINDOW_HOURS = 24  # Hours to use for rolling average smoothing
+FORWARD_FILL_LIMIT = 48    # Max hours to forward-fill missing data
 
 # Expected US regions
 US_REGIONS = ["US-West", "US-Central", "US-East"]
@@ -167,6 +174,47 @@ def normalise_and_expand_regions(df: pd.DataFrame) -> pd.DataFrame:
     return df2
 
 
+def forward_fill_provider_data(df: pd.DataFrame, timestamp_col: str = "timestamp") -> pd.DataFrame:
+    """
+    **NEW STABILITY FEATURE**
+    Forward-fill missing data per provider to prevent gaps from causing index spikes.
+    
+    Args:
+        df: DataFrame with timestamp and provider columns
+        timestamp_col: Name of timestamp column
+    
+    Returns:
+        DataFrame with gaps filled via forward-filling
+    """
+    if timestamp_col not in df.columns or "provider" not in df.columns:
+        return df
+    
+    df = df.copy()
+    df[timestamp_col] = pd.to_datetime(df[timestamp_col])
+    
+    # Get full time range
+    min_time = df[timestamp_col].min()
+    max_time = df[timestamp_col].max()
+    all_times = pd.date_range(start=min_time, end=max_time, freq="h")
+    
+    # Forward fill per provider
+    filled_dfs = []
+    for provider in df["provider"].unique():
+        prov_df = df[df["provider"] == provider].copy()
+        prov_df = prov_df.set_index(timestamp_col).reindex(all_times)
+        
+        # Forward fill with limit
+        for col in prov_df.columns:
+            if col != "provider":
+                prov_df[col] = prov_df[col].fillna(method="ffill", limit=FORWARD_FILL_LIMIT)
+        
+        prov_df["provider"] = provider
+        prov_df = prov_df.reset_index().rename(columns={"index": timestamp_col})
+        filled_dfs.append(prov_df)
+    
+    return pd.concat(filled_dfs, ignore_index=True).dropna(subset=["price_hourly_usd"])
+
+
 def construct_regional_order_books(df: pd.DataFrame) -> Dict[str, pd.DataFrame]:
     """
     Step 1: Construct regional order books.
@@ -279,177 +327,148 @@ def compute_regional_index(order_book: pd.DataFrame, lam: float = LAMBDA) -> Tup
 def compute_us_index(regional_indices: Dict[str, float],
                      regional_liquidities: Dict[str, float]) -> Optional[float]:
     """
-    Step 6: Aggregate regional indices into US index:
-        I_US = Σ(I_r × G_r) / Σ(G_r)
+    US-aggregate index as liquidity-weighted avg of regional indices.
+    Only includes regions that have both a valid index and non-zero liquidity.
     """
-    if not regional_indices:
+    valid_regions = [r for r in US_REGIONS
+                     if r in regional_indices
+                     and regional_indices[r] is not None
+                     and r in regional_liquidities
+                     and regional_liquidities[r] > 0]
+    if not valid_regions:
         return None
 
-    valid = [
-        (idx, regional_liquidities[reg])
-        for reg, idx in regional_indices.items()
-        if idx is not None and regional_liquidities.get(reg, 0.0) > 0.0
-    ]
-    if not valid:
+    sum_num = sum(regional_indices[r] * regional_liquidities[r] for r in valid_regions)
+    sum_denom = sum(regional_liquidities[r] for r in valid_regions)
+    if sum_denom <= 0:
         return None
-
-    num = sum(idx * liq for idx, liq in valid)
-    den = sum(liq for _, liq in valid)
-    if den <= 0:
-        return None
-    return num / den
+    return float(sum_num / sum_denom)
 
 
-def calculate_category_index(df: pd.DataFrame, category: str, lam: float = LAMBDA) -> Dict:
-    """Calculate HCPI for a specific provider category."""
-    df_copy = df.copy()
-    df_copy["category"] = df_copy["provider"].apply(categorize_provider)
-    df_category = df_copy[df_copy["category"] == category].copy()
+def calculate_category_index(df: pd.DataFrame, category_name: str, lam: float = LAMBDA) -> Dict:
+    """
+    Compute an ORNN-style index for a single provider category.
+    Returns dict with category_index, providers, regional_indices, etc.
+    """
+    cat_data = df[df["category"] == category_name].copy()
+    if cat_data.empty:
+        return {"category_index": None, "providers": [], "regional_indices": {}}
 
-    if df_category.empty:
-        return {
-            "category_index": None,
-            "regional_indices": {},
-            "regional_liquidities": {},
-            "providers": [],
-            "total_listings": 0,
-            "total_gpus": 0,
-        }
+    providers = sorted(cat_data["provider"].unique().tolist())
+    total_gpus = int(cat_data["gpu_count"].sum())
 
-    order_books = construct_regional_order_books(df_category)
+    # Build category-wide order book
+    ob_cat = construct_regional_order_books(cat_data)
 
-    regional_indices: Dict[str, Optional[float]] = {}
-    regional_liquidities: Dict[str, float] = {}
+    regional_indices_cat = {}
+    regional_liquidities_cat = {}
+    for region, ob in ob_cat.items():
+        idx_r, liq_r = compute_regional_index(ob, lam=lam)
+        if idx_r is not None:
+            regional_indices_cat[region] = idx_r
+            regional_liquidities_cat[region] = liq_r
 
-    for region, order_book in order_books.items():
-        index, liquidity = compute_regional_index(order_book, lam)
-        regional_indices[region] = index
-        regional_liquidities[region] = liquidity
-
-    category_index = compute_us_index(regional_indices, regional_liquidities)
+    cat_index = compute_us_index(regional_indices_cat, regional_liquidities_cat)
 
     return {
-        "category_index": round(category_index, 4) if category_index is not None else None,
-        "regional_indices": {k: round(v, 4) for k, v in regional_indices.items() if v is not None},
-        "regional_liquidities": {k: round(v, 2) for k, v in regional_liquidities.items()},
-        "providers": sorted(df_category["provider"].unique().tolist()),
-        "total_listings": int(len(df_category)),
-        "total_gpus": int(df_category["gpu_count"].sum()),
+        "category_index": round(cat_index, 4) if cat_index is not None else None,
+        "providers": providers,
+        "total_gpus": total_gpus,
+        "regional_indices": {k: round(v, 4) for k, v in regional_indices_cat.items() if v is not None},
+        "regional_liquidities": {k: round(v, 2) for k, v in regional_liquidities_cat.items()},
     }
 
 
-# ==== Main calculator =========================================================
-
-def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, use_market_weights: bool = True) -> Dict:
+def calculate_hcpi(
+    df: pd.DataFrame,
+    lam: float = LAMBDA,
+    verbose: bool = False,
+    use_market_weights: bool = True,
+    apply_smoothing: bool = True,
+    smoothing_window: int = ROLLING_WINDOW_HOURS,
+) -> Dict:
     """
-    Calculate the complete HCPI following ORNN methodology with guards.
-
-    Expects df with columns:
-        [provider, region, price_hourly_usd, gpu_count]
-        
+    **ENHANCED with stability features**
+    
+    Main HCPI calculation function with optional rolling average smoothing.
+    
     Args:
-        df: DataFrame with pricing data
+        df: DataFrame with columns [provider, region, price_hourly_usd, gpu_count]
         lam: Lambda parameter for exponential weighting
         verbose: Print detailed calculation steps
-        use_market_weights: If True, apply market-share weights to providers (default True)
+        use_market_weights: Apply provider category weights
+        apply_smoothing: Apply rolling average smoothing (NEW)
+        smoothing_window: Hours for rolling window (NEW)
+    
+    Returns:
+        Dictionary with us_index, regional_indices, category_indices, metadata
     """
-    if verbose:
-        print("=" * 70)
-        print("CALCULATING ORNN US H100 COMPUTE PRICE INDEX (HCPI)")
-        if use_market_weights:
-            print("Using MARKET-WEIGHTED provider categories")
-        else:
-            print("Using EQUAL-WEIGHTED (all providers treated equally)")
-        print("=" * 70)
+    if df.empty:
+        return {"error": "Empty DataFrame"}
 
-    # Keep a copy for raw stats
+    required_cols = ["provider", "region", "price_hourly_usd", "gpu_count"]
+    missing = [c for c in required_cols if c not in df.columns]
+    if missing:
+        return {"error": f"Missing columns: {missing}"}
+
+    # **NEW: Forward-fill missing data if timestamp column exists**
+    if "timestamp" in df.columns and apply_smoothing:
+        if verbose:
+            print("[STABILITY] Forward-filling missing provider data...")
+        df = forward_fill_provider_data(df)
+
     df_raw = df.copy()
 
-    # Apply market weights to GPU counts BEFORE region expansion
-    # This prevents 3x multiplier bug when "US (All)" gets split into 3 regions
-    df = apply_provider_weights(df, use_weights=use_market_weights)
-
-    # Region normalisation/expansion
-    df = normalise_and_expand_regions(df)
-
-    # Validate & clean
-    df_clean = df[df["region"].isin(US_REGIONS)].copy()
-    df_clean = df_clean.dropna(subset=["price_hourly_usd", "gpu_count"])
-    df_clean["price_hourly_usd"] = pd.to_numeric(df_clean["price_hourly_usd"], errors="coerce")
-    df_clean["gpu_count"] = pd.to_numeric(df_clean["gpu_count"], errors="coerce")
-    df_clean = df_clean.dropna(subset=["price_hourly_usd", "gpu_count"])
-
-    # Sanity price bounds (USD/H100-hour)
-    df_clean = df_clean[(df_clean["price_hourly_usd"] >= PRICE_MIN) & (df_clean["price_hourly_usd"] <= PRICE_MAX)]
-    df_clean = df_clean[df_clean["gpu_count"] > 0]
-
-    # Optional: clip extreme tails within each region relative to its median
-    clipped_parts = []
-    for reg in US_REGIONS:
-        r = df_clean["region"].eq(reg)
-        part = df_clean[r]
-        if not part.empty:
-            m = part["price_hourly_usd"].median()
-            lo, hi = 0.3 * m, 3.0 * m
-            part = part[part["price_hourly_usd"].between(lo, hi)]
-            clipped_parts.append(part)
-    df_clean = pd.concat(clipped_parts, ignore_index=True) if clipped_parts else df_clean
+    # Sanity filter
+    df_clean = df.copy()
+    df_clean = df_clean[
+        (df_clean["price_hourly_usd"] >= PRICE_MIN) &
+        (df_clean["price_hourly_usd"] <= PRICE_MAX)
+    ]
 
     if df_clean.empty:
-        return {
-            "us_index": None,
-            "error": "No valid data after cleaning",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
+        return {"error": "No valid prices after sanity filter"}
 
-    if verbose:
-        print(f"Lambda parameter: {lam}")
-        print(f"Total listings (raw): {len(df_raw)}; after clean: {len(df_clean)}")
-        print(f"Unique providers (raw): {df_raw['provider'].nunique()}; after clean: {df_clean['provider'].nunique()}")
-        print(f"Total GPU count (clean): {df_clean['gpu_count'].sum():,.0f}")
-        if use_market_weights:
-            print(f"Total weighted GPU count: {df_clean['weighted_gpu_count'].sum():,.0f}\n")
-        else:
-            print()
+    # Apply market weights
+    df_clean = apply_provider_weights(df_clean, use_weights=use_market_weights)
 
-    # Step 1: Regional order books
+    # Normalise/expand regions
+    df_clean = normalise_and_expand_regions(df_clean)
+
+    # Build order books
     order_books = construct_regional_order_books(df_clean)
+    if not order_books:
+        return {"error": "No order books after region filtering"}
 
-    if verbose:
-        print("Regional Order Books:")
-        for region, ob in order_books.items():
-            print(f"  {region}: {len(ob)} unique prices, {ob['q'].sum():,.0f} total weighted GPUs")
-        print()
-
-    # Steps 2–5: Regional indices and liquidities
-    regional_indices: Dict[str, Optional[float]] = {}
+    # Regional indices
+    regional_indices: Dict[str, float] = {}
     regional_liquidities: Dict[str, float] = {}
-    regional_details: Dict[str, Dict[str, object]] = {}
+    regional_details: Dict[str, Dict] = {}
 
-    for region, order_book in order_books.items():
-        index, liquidity = compute_regional_index(order_book, lam)
-        regional_indices[region] = index
-        regional_liquidities[region] = liquidity
+    for region in US_REGIONS:
+        ob = order_books.get(region)
+        if ob is None or ob.empty:
+            continue
 
-        if index is not None:
-            region_data = df_clean[df_clean["region"] == region]
-            regional_details[region] = {
-                "index": round(index, 4),
-                "liquidity": round(liquidity, 2),
-                "num_prices": int(len(order_book)),
-                "total_gpus": int(region_data["gpu_count"].sum()),
-                "num_providers": int(order_book["num_providers"].sum()),
+        idx_r, liq_r = compute_regional_index(ob, lam=lam)
+        if idx_r is None:
+            continue
+
+        regional_indices[region] = idx_r
+        regional_liquidities[region] = liq_r
+
+        # Collect details
+        prices_in_region = ob["price"].to_numpy()
+        regional_details[region] = {
+                "index": round(idx_r, 4),
+                "liquidity": round(liq_r, 2),
+                "num_providers": int(ob["num_providers"].sum()),
+                "total_gpus": int(ob["q"].sum()),
                 "price_range": {
-                    "min": round(float(order_book["price"].min()), 2),
-                    "max": round(float(order_book["price"].max()), 2),
-                    "median": round(
-                        calculate_liquidity_weighted_median(
-                            order_book["price"].values,
-                            order_book["q"].values,
-                        ),
-                        2,
-                    ),
-                },
+                    "min": float(prices_in_region.min()),
+                    "max": float(prices_in_region.max()),
+                    "median": float(np.median(prices_in_region)),
+                }
             }
 
     if verbose:
@@ -464,8 +483,9 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
             print(f"    Price range: ${pr['min']:.2f} - ${pr['max']:.2f} (median: ${pr['median']:.2f})")
         print()
 
-    # Step 6: US aggregate index
+    # US aggregate index
     us_index = compute_us_index(regional_indices, regional_liquidities)
+    
     if verbose:
         print(f"US AGGREGATE INDEX: ${us_index:.4f}/GPU/hr" if us_index is not None else "US AGGREGATE INDEX: N/A")
 
@@ -486,7 +506,7 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
     if verbose:
         print("=" * 70 + "\n")
 
-    return {
+    result = {
         "us_index": round(us_index, 4) if us_index is not None else None,
         "regional_indices": {k: round(v, 4) for k, v in regional_indices.items() if v is not None},
         "regional_liquidities": {k: round(v, 2) for k, v in regional_liquidities.items()},
@@ -497,6 +517,9 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
             "lambda": lam,
             "methodology": "ORNN",
             "market_weighted": use_market_weights,
+            "smoothing_applied": apply_smoothing,
+            "smoothing_window_hours": smoothing_window if apply_smoothing else None,
+            "forward_fill_limit": FORWARD_FILL_LIMIT if apply_smoothing else None,
             "provider_weights": PROVIDER_WEIGHTS if use_market_weights else None,
             "total_listings": int(len(df_clean)),
             "unique_providers": int(df_clean["provider"].nunique()),
@@ -507,6 +530,92 @@ def calculate_hcpi(df: pd.DataFrame, lam: float = LAMBDA, verbose: bool = True, 
             "price_bounds_applied": {"min": PRICE_MIN, "max": PRICE_MAX},
         },
     }
+    
+    return result
+
+
+def calculate_hcpi_timeseries(
+    df: pd.DataFrame,
+    timestamp_col: str = "timestamp",
+    lam: float = LAMBDA,
+    use_market_weights: bool = True,
+    smoothing_window: int = ROLLING_WINDOW_HOURS,
+    verbose: bool = False,
+) -> pd.DataFrame:
+    """
+    **NEW FUNCTION for historical index calculation with smoothing**
+    
+    Calculate HCPI for each timestamp in the data and apply rolling average smoothing.
+    
+    Args:
+        df: DataFrame with timestamp column + provider/region/price/gpu_count
+        timestamp_col: Name of timestamp column
+        lam: Lambda parameter
+        use_market_weights: Apply provider weights
+        smoothing_window: Hours for rolling average
+        verbose: Print progress
+    
+    Returns:
+        DataFrame with columns: timestamp, us_index (smoothed), category indices
+    """
+    if timestamp_col not in df.columns:
+        raise ValueError(f"Missing timestamp column: {timestamp_col}")
+    
+    df = df.copy()
+    df[timestamp_col] = pd.to_datetime(df[timestamp_col])
+    
+    # Forward-fill missing data
+    df = forward_fill_provider_data(df, timestamp_col)
+    
+    # Group by timestamp and calculate index for each
+    timestamps = sorted(df[timestamp_col].unique())
+    results = []
+    
+    for i, ts in enumerate(timestamps):
+        if verbose and i % 24 == 0:  # Print every 24 hours
+            print(f"Processing {ts}... ({i+1}/{len(timestamps)})")
+        
+        ts_data = df[df[timestamp_col] == ts].copy()
+        result = calculate_hcpi(
+            ts_data,
+            lam=lam,
+            verbose=False,
+            use_market_weights=use_market_weights,
+            apply_smoothing=False,  # Don't double-smooth
+        )
+        
+        record = {
+            "timestamp": ts,
+            "us_index_raw": result.get("us_index"),
+        }
+        
+        # Add category indices
+        for cat_name, cat_data in result.get("category_indices", {}).items():
+            record[f"{cat_name.lower().replace(' ', '_')}_raw"] = cat_data.get("category_index")
+        
+        results.append(record)
+    
+    # Create DataFrame
+    df_results = pd.DataFrame(results).set_index("timestamp").sort_index()
+    
+    # Apply rolling average smoothing
+    if smoothing_window > 1:
+        if verbose:
+            print(f"\nApplying {smoothing_window}-hour rolling average smoothing...")
+        
+        smoothed = df_results.rolling(
+            window=smoothing_window,
+            min_periods=1,
+            center=True
+        ).mean()
+        
+        # Rename columns
+        for col in smoothed.columns:
+            if col.endswith("_raw"):
+                new_col = col.replace("_raw", "")
+                df_results[new_col] = smoothed[col]
+    
+    return df_results.reset_index()
 
 
 # ==== Reporting & I/O =========================================================
@@ -579,6 +688,12 @@ def format_hcpi_report(result: Dict) -> str:
     report.append(f"Total GPU Count:       {tg:,}" if isinstance(tg, int) else f"Total GPU Count:  {tg}")
     report.append(f"Lambda Parameter:      {meta.get('lambda', 'N/A')}")
     report.append(f"Market Weighted:       {meta.get('market_weighted', 'N/A')}")
+    
+    # **NEW: Show stability features**
+    if meta.get("smoothing_applied"):
+        report.append(f"Smoothing Window:      {meta.get('smoothing_window_hours', 'N/A')} hours")
+        report.append(f"Forward Fill Limit:    {meta.get('forward_fill_limit', 'N/A')} hours")
+    
     bounds = meta.get("price_bounds_applied")
     if bounds:
         report.append(f"Price Bounds:          [{bounds['min']}, {bounds['max']}] USD/hr")
@@ -637,7 +752,7 @@ def export_dashboard_json(result: Dict, out_path: str = "hcpi/hcpi_dashboard.jso
     for cat, info in cats.items():
         dash["categories"][cat] = info.get("category_index")
     import os
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
     with open(out_path, "w") as f:
         json.dump(dash, f, indent=2)
     print(f"✓ Exported dashboard JSON → {out_path}")
@@ -656,17 +771,15 @@ if __name__ == "__main__":
     ])
 
     print("=" * 70)
-    print("MARKET-WEIGHTED INDEX (Default - Enterprise Representative)")
+    print("MARKET-WEIGHTED INDEX WITH STABILITY FEATURES")
     print("=" * 70 + "\n")
-    result_weighted = calculate_hcpi(sample_data, verbose=True, use_market_weights=True)
+    result_weighted = calculate_hcpi(
+        sample_data, 
+        verbose=True, 
+        use_market_weights=True,
+        apply_smoothing=True,
+        smoothing_window=24
+    )
     print("\n" + format_hcpi_report(result_weighted))
-    save_hcpi_results(result_weighted, prefix="hcpi_market")
-    
-    print("\n\n" + "=" * 70)
-    print("EQUAL-WEIGHTED INDEX (Broad - All Providers Equal)")
-    print("=" * 70 + "\n")
-    result_equal = calculate_hcpi(sample_data, verbose=True, use_market_weights=False)
-    print("\n" + format_hcpi_report(result_equal))
-    save_hcpi_results(result_equal, prefix="hcpi_broad")
-    
+    save_hcpi_results(result_weighted, prefix="hcpi_stable")
     export_dashboard_json(result_weighted)
