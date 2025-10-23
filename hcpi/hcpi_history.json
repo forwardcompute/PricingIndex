@@ -1,464 +1,464 @@
 [
   {
     "timestamp": "2025-10-21T15:11:53Z",
-    "us_index": 2.5466,
-    "US-East": 3.8514,
-    "US-Central": 2.356,
-    "US-West": 2.2652
-  },
-  {
-    "timestamp": "2025-10-21T15:22:11Z",
-    "us_index": 2.5466,
-    "US-East": 3.8519,
-    "US-Central": 2.356,
-    "US-West": 2.2653
-  },
-  {
-    "timestamp": "2025-10-21T16:27:57Z",
-    "us_index": 2.5467,
-    "US-East": 3.8523,
-    "US-Central": 2.356,
-    "US-West": 2.2654
-  },
-  {
-    "timestamp": "2025-10-21T17:20:05Z",
-    "us_index": 2.5468,
-    "US-East": 3.8528,
-    "US-Central": 2.3561,
-    "US-West": 2.2655
-  },
-  {
-    "timestamp": "2025-10-21T18:31:42Z",
-    "us_index": 2.5469,
-    "US-East": 3.8533,
-    "US-Central": 2.3561,
-    "US-West": 2.2656
-  },
-  {
-    "timestamp": "2025-10-21T19:20:08Z",
-    "us_index": 2.547,
-    "US-East": 3.8538,
-    "US-Central": 2.3561,
-    "US-West": 2.2656
-  },
-  {
-    "timestamp": "2025-10-21T19:33:42Z",
     "us_index": 2.5471,
-    "US-East": 3.8543,
+    "US-East": 3.8544,
     "US-Central": 2.3561,
     "US-West": 2.2657
   },
   {
-    "timestamp": "2025-10-21T20:26:00Z",
+    "timestamp": "2025-10-21T15:22:11Z",
+    "us_index": 2.5471,
+    "US-East": 3.8545,
+    "US-Central": 2.3561,
+    "US-West": 2.2658
+  },
+  {
+    "timestamp": "2025-10-21T16:27:57Z",
+    "us_index": 2.5471,
+    "US-East": 3.8547,
+    "US-Central": 2.3561,
+    "US-West": 2.2658
+  },
+  {
+    "timestamp": "2025-10-21T17:20:05Z",
     "us_index": 2.5472,
     "US-East": 3.8548,
     "US-Central": 2.3561,
     "US-West": 2.2658
   },
   {
-    "timestamp": "2025-10-21T21:21:04Z",
+    "timestamp": "2025-10-21T18:31:42Z",
+    "us_index": 2.5472,
+    "US-East": 3.855,
+    "US-Central": 2.3561,
+    "US-West": 2.2659
+  },
+  {
+    "timestamp": "2025-10-21T19:20:08Z",
+    "us_index": 2.5472,
+    "US-East": 3.8551,
+    "US-Central": 2.3561,
+    "US-West": 2.2659
+  },
+  {
+    "timestamp": "2025-10-21T19:33:42Z",
     "us_index": 2.5472,
     "US-East": 3.8553,
     "US-Central": 2.3561,
     "US-West": 2.2659
   },
   {
+    "timestamp": "2025-10-21T20:26:00Z",
+    "us_index": 2.5473,
+    "US-East": 3.8555,
+    "US-Central": 2.3561,
+    "US-West": 2.266
+  },
+  {
+    "timestamp": "2025-10-21T21:21:04Z",
+    "us_index": 2.5473,
+    "US-East": 3.8556,
+    "US-Central": 2.3561,
+    "US-West": 2.266
+  },
+  {
     "timestamp": "2025-10-21T22:18:27Z",
     "us_index": 2.5473,
-    "US-East": 3.8559,
+    "US-East": 3.8558,
     "US-Central": 2.3562,
     "US-West": 2.266
   },
   {
     "timestamp": "2025-10-21T23:21:54Z",
     "us_index": 2.5474,
-    "US-East": 3.8565,
+    "US-East": 3.856,
     "US-Central": 2.3562,
     "US-West": 2.2661
   },
   {
     "timestamp": "2025-10-22T01:41:06Z",
+    "us_index": 2.5474,
+    "US-East": 3.8562,
+    "US-Central": 2.3562,
+    "US-West": 2.2661
+  },
+  {
+    "timestamp": "2025-10-22T03:12:55Z",
+    "us_index": 2.5474,
+    "US-East": 3.8564,
+    "US-Central": 2.3562,
+    "US-West": 2.2661
+  },
+  {
+    "timestamp": "2025-10-22T04:25:54Z",
     "us_index": 2.5475,
+    "US-East": 3.8566,
+    "US-Central": 2.3562,
+    "US-West": 2.2662
+  },
+  {
+    "timestamp": "2025-10-22T05:21:56Z",
+    "us_index": 2.5475,
+    "US-East": 3.8568,
+    "US-Central": 2.3562,
+    "US-West": 2.2662
+  },
+  {
+    "timestamp": "2025-10-22T06:34:08Z",
+    "us_index": 2.5476,
     "US-East": 3.857,
     "US-Central": 2.3562,
     "US-West": 2.2662
   },
   {
-    "timestamp": "2025-10-22T03:12:55Z",
+    "timestamp": "2025-10-22T07:26:49Z",
     "us_index": 2.5476,
-    "US-East": 3.8576,
+    "US-East": 3.8573,
+    "US-Central": 2.3562,
+    "US-West": 2.2663
+  },
+  {
+    "timestamp": "2025-10-22T08:30:52Z",
+    "us_index": 2.5476,
+    "US-East": 3.8575,
+    "US-Central": 2.3562,
+    "US-West": 2.2663
+  },
+  {
+    "timestamp": "2025-10-22T09:24:48Z",
+    "us_index": 2.5477,
+    "US-East": 3.8577,
     "US-Central": 2.3562,
     "US-West": 2.2664
   },
   {
-    "timestamp": "2025-10-22T04:25:54Z",
+    "timestamp": "2025-10-22T10:23:49Z",
+    "us_index": 2.5477,
+    "US-East": 3.858,
+    "US-Central": 2.3562,
+    "US-West": 2.2664
+  },
+  {
+    "timestamp": "2025-10-22T11:20:36Z",
     "us_index": 2.5478,
-    "US-East": 3.8583,
+    "US-East": 3.8582,
     "US-Central": 2.3562,
     "US-West": 2.2665
   },
   {
-    "timestamp": "2025-10-22T05:21:56Z",
+    "timestamp": "2025-10-22T12:43:59Z",
+    "us_index": 2.5478,
+    "US-East": 3.8585,
+    "US-Central": 2.3562,
+    "US-West": 2.2665
+  },
+  {
+    "timestamp": "2025-10-22T12:47:13Z",
     "us_index": 2.5479,
-    "US-East": 3.8589,
+    "US-East": 3.8587,
     "US-Central": 2.3563,
     "US-West": 2.2666
   },
   {
-    "timestamp": "2025-10-22T06:34:08Z",
-    "us_index": 2.548,
-    "US-East": 3.8596,
+    "timestamp": "2025-10-22T12:56:01Z",
+    "us_index": 2.5479,
+    "US-East": 3.859,
+    "US-Central": 2.3563,
+    "US-West": 2.2666
+  },
+  {
+    "timestamp": "2025-10-22T13:18:28Z",
+    "us_index": 2.5479,
+    "US-East": 3.8592,
     "US-Central": 2.3563,
     "US-West": 2.2667
   },
   {
-    "timestamp": "2025-10-22T07:26:49Z",
+    "timestamp": "2025-10-22T13:23:11Z",
+    "us_index": 2.548,
+    "US-East": 3.8597,
+    "US-Central": 2.3563,
+    "US-West": 2.2667
+  },
+  {
+    "timestamp": "2025-10-22T13:35:13Z",
     "us_index": 2.5481,
-    "US-East": 3.8602,
+    "US-East": 3.8601,
     "US-Central": 2.3563,
     "US-West": 2.2668
   },
   {
-    "timestamp": "2025-10-22T08:30:52Z",
+    "timestamp": "2025-10-22T14:23:58Z",
     "us_index": 2.5482,
-    "US-East": 3.8609,
+    "US-East": 3.8606,
+    "US-Central": 2.3563,
+    "US-West": 2.2669
+  },
+  {
+    "timestamp": "2025-10-22T14:49:04Z",
+    "us_index": 2.5483,
+    "US-East": 3.8611,
     "US-Central": 2.3563,
     "US-West": 2.267
   },
   {
-    "timestamp": "2025-10-22T09:24:48Z",
+    "timestamp": "2025-10-22T14:58:16Z",
     "us_index": 2.5484,
     "US-East": 3.8616,
     "US-Central": 2.3564,
     "US-West": 2.2671
   },
   {
-    "timestamp": "2025-10-22T10:23:49Z",
+    "timestamp": "2025-10-22T15:09:01Z",
     "us_index": 2.5485,
-    "US-East": 3.8623,
+    "US-East": 3.8622,
     "US-Central": 2.3564,
     "US-West": 2.2672
   },
   {
-    "timestamp": "2025-10-22T11:20:36Z",
+    "timestamp": "2025-10-22T15:23:42Z",
     "us_index": 2.5486,
-    "US-East": 3.8631,
+    "US-East": 3.8627,
+    "US-Central": 2.3564,
+    "US-West": 2.2673
+  },
+  {
+    "timestamp": "2025-10-22T16:18:39Z",
+    "us_index": 2.5487,
+    "US-East": 3.8633,
     "US-Central": 2.3564,
     "US-West": 2.2674
   },
   {
-    "timestamp": "2025-10-22T12:43:59Z",
-    "us_index": 2.5487,
-    "US-East": 3.8638,
+    "timestamp": "2025-10-22T16:29:59Z",
+    "us_index": 2.5488,
+    "US-East": 3.8639,
     "US-Central": 2.3564,
-    "US-West": 2.2675
+    "US-West": 2.2676
   },
   {
-    "timestamp": "2025-10-22T12:47:13Z",
+    "timestamp": "2025-10-22T17:21:39Z",
     "us_index": 2.5489,
-    "US-East": 3.8646,
+    "US-East": 3.8645,
     "US-Central": 2.3565,
     "US-West": 2.2677
   },
   {
-    "timestamp": "2025-10-22T12:56:01Z",
+    "timestamp": "2025-10-22T18:33:58Z",
     "us_index": 2.549,
-    "US-East": 3.8654,
+    "US-East": 3.8652,
     "US-Central": 2.3565,
     "US-West": 2.2678
   },
   {
-    "timestamp": "2025-10-22T13:18:28Z",
-    "us_index": 2.5492,
-    "US-East": 3.8662,
+    "timestamp": "2025-10-22T19:18:05Z",
+    "us_index": 2.5491,
+    "US-East": 3.8658,
     "US-Central": 2.3565,
-    "US-West": 2.268
+    "US-West": 2.2679
   },
   {
-    "timestamp": "2025-10-22T13:23:11Z",
+    "timestamp": "2025-10-22T20:25:30Z",
+    "us_index": 2.5492,
+    "US-East": 3.8665,
+    "US-Central": 2.3565,
+    "US-West": 2.2681
+  },
+  {
+    "timestamp": "2025-10-22T21:19:15Z",
     "us_index": 2.5494,
-    "US-East": 3.8675,
+    "US-East": 3.8672,
     "US-Central": 2.3566,
     "US-West": 2.2682
   },
   {
-    "timestamp": "2025-10-22T13:35:13Z",
+    "timestamp": "2025-10-22T22:18:58Z",
+    "us_index": 2.5495,
+    "US-East": 3.8679,
+    "US-Central": 2.3566,
+    "US-West": 2.2683
+  },
+  {
+    "timestamp": "2025-10-22T23:19:54Z",
     "us_index": 2.5496,
-    "US-East": 3.8689,
+    "US-East": 3.8687,
     "US-Central": 2.3566,
     "US-West": 2.2685
   },
   {
-    "timestamp": "2025-10-22T14:23:58Z",
+    "timestamp": "2025-10-23T01:28:50Z",
+    "us_index": 2.5497,
+    "US-East": 3.8694,
+    "US-Central": 2.3566,
+    "US-West": 2.2686
+  },
+  {
+    "timestamp": "2025-10-23T03:07:01Z",
     "us_index": 2.5499,
-    "US-East": 3.8703,
+    "US-East": 3.8702,
     "US-Central": 2.3567,
     "US-West": 2.2688
   },
   {
-    "timestamp": "2025-10-22T14:49:04Z",
+    "timestamp": "2025-10-23T03:42:28Z",
+    "us_index": 2.5499,
+    "US-East": 3.8705,
+    "US-Central": 2.3567,
+    "US-West": 2.2688
+  },
+  {
+    "timestamp": "2025-10-23T04:24:55Z",
+    "us_index": 2.55,
+    "US-East": 3.8708,
+    "US-Central": 2.3567,
+    "US-West": 2.2689
+  },
+  {
+    "timestamp": "2025-10-23T05:22:02Z",
+    "us_index": 2.5501,
+    "US-East": 3.8711,
+    "US-Central": 2.3567,
+    "US-West": 2.2689
+  },
+  {
+    "timestamp": "2025-10-23T06:32:29Z",
+    "us_index": 2.5501,
+    "US-East": 3.8715,
+    "US-Central": 2.3567,
+    "US-West": 2.269
+  },
+  {
+    "timestamp": "2025-10-23T07:22:48Z",
     "us_index": 2.5502,
     "US-East": 3.8718,
     "US-Central": 2.3567,
     "US-West": 2.2691
   },
   {
-    "timestamp": "2025-10-22T14:58:16Z",
+    "timestamp": "2025-10-23T07:57:02Z",
+    "us_index": 2.5502,
+    "US-East": 3.8721,
+    "US-Central": 2.3567,
+    "US-West": 2.2691
+  },
+  {
+    "timestamp": "2025-10-23T08:14:58Z",
+    "us_index": 2.5503,
+    "US-East": 3.8725,
+    "US-Central": 2.3567,
+    "US-West": 2.2692
+  },
+  {
+    "timestamp": "2025-10-23T08:34:23Z",
     "us_index": 2.5504,
-    "US-East": 3.8734,
+    "US-East": 3.8728,
+    "US-Central": 2.3568,
+    "US-West": 2.2693
+  },
+  {
+    "timestamp": "2025-10-23T09:15:09Z",
+    "us_index": 2.5504,
+    "US-East": 3.8732,
+    "US-Central": 2.3568,
+    "US-West": 2.2693
+  },
+  {
+    "timestamp": "2025-10-23T09:23:38Z",
+    "us_index": 2.5505,
+    "US-East": 3.8735,
     "US-Central": 2.3568,
     "US-West": 2.2694
   },
   {
-    "timestamp": "2025-10-22T15:09:01Z",
+    "timestamp": "2025-10-23T11:49:34Z",
+    "us_index": 2.5505,
+    "US-East": 3.8739,
+    "US-Central": 2.3568,
+    "US-West": 2.2695
+  },
+  {
+    "timestamp": "2025-10-23T12:45:49Z",
+    "us_index": 2.5506,
+    "US-East": 3.8743,
+    "US-Central": 2.3568,
+    "US-West": 2.2696
+  },
+  {
+    "timestamp": "2025-10-23T13:34:40Z",
     "us_index": 2.5507,
-    "US-East": 3.875,
+    "US-East": 3.8747,
+    "US-Central": 2.3568,
+    "US-West": 2.2696
+  },
+  {
+    "timestamp": "2025-10-23T14:25:07Z",
+    "us_index": 2.5508,
+    "US-East": 3.8751,
     "US-Central": 2.3568,
     "US-West": 2.2697
   },
   {
-    "timestamp": "2025-10-22T15:23:42Z",
+    "timestamp": "2025-10-23T15:23:30Z",
+    "us_index": 2.5508,
+    "US-East": 3.8755,
+    "US-Central": 2.3569,
+    "US-West": 2.2698
+  },
+  {
+    "timestamp": "2025-10-23T16:29:45Z",
+    "us_index": 2.5509,
+    "US-East": 3.8759,
+    "US-Central": 2.3569,
+    "US-West": 2.2699
+  },
+  {
+    "timestamp": "2025-10-23T17:21:35Z",
     "us_index": 2.551,
-    "US-East": 3.8767,
+    "US-East": 3.8764,
     "US-Central": 2.3569,
     "US-West": 2.27
   },
   {
-    "timestamp": "2025-10-22T16:18:39Z",
+    "timestamp": "2025-10-23T18:32:04Z",
+    "us_index": 2.5511,
+    "US-East": 3.8768,
+    "US-Central": 2.3569,
+    "US-West": 2.27
+  },
+  {
+    "timestamp": "2025-10-23T18:51:28Z",
+    "us_index": 2.5511,
+    "US-East": 3.8772,
+    "US-Central": 2.3569,
+    "US-West": 2.2701
+  },
+  {
+    "timestamp": "2025-10-23T19:01:14Z",
+    "us_index": 2.5512,
+    "US-East": 3.8777,
+    "US-Central": 2.3569,
+    "US-West": 2.2702
+  },
+  {
+    "timestamp": "2025-10-23T19:11:45Z",
     "us_index": 2.5513,
-    "US-East": 3.8784,
+    "US-East": 3.8781,
     "US-Central": 2.357,
     "US-West": 2.2703
   },
   {
-    "timestamp": "2025-10-22T16:29:59Z",
-    "us_index": 2.5517,
-    "US-East": 3.8802,
-    "US-Central": 2.357,
-    "US-West": 2.2707
-  },
-  {
-    "timestamp": "2025-10-22T17:21:39Z",
-    "us_index": 2.552,
-    "US-East": 3.8821,
-    "US-Central": 2.3571,
-    "US-West": 2.271
-  },
-  {
-    "timestamp": "2025-10-22T18:33:58Z",
-    "us_index": 2.5523,
-    "US-East": 3.884,
-    "US-Central": 2.3572,
-    "US-West": 2.2714
-  },
-  {
-    "timestamp": "2025-10-22T19:18:05Z",
-    "us_index": 2.5527,
-    "US-East": 3.886,
-    "US-Central": 2.3572,
-    "US-West": 2.2718
-  },
-  {
-    "timestamp": "2025-10-22T20:25:30Z",
-    "us_index": 2.553,
-    "US-East": 3.888,
-    "US-Central": 2.3573,
-    "US-West": 2.2722
-  },
-  {
-    "timestamp": "2025-10-22T21:19:15Z",
-    "us_index": 2.5534,
-    "US-East": 3.8901,
-    "US-Central": 2.3574,
-    "US-West": 2.2726
-  },
-  {
-    "timestamp": "2025-10-22T22:18:58Z",
-    "us_index": 2.5538,
-    "US-East": 3.8922,
-    "US-Central": 2.3575,
-    "US-West": 2.273
-  },
-  {
-    "timestamp": "2025-10-22T23:19:54Z",
-    "us_index": 2.5542,
-    "US-East": 3.8945,
-    "US-Central": 2.3575,
-    "US-West": 2.2734
-  },
-  {
-    "timestamp": "2025-10-23T01:28:50Z",
-    "us_index": 2.5546,
-    "US-East": 3.8967,
-    "US-Central": 2.3576,
-    "US-West": 2.2739
-  },
-  {
-    "timestamp": "2025-10-23T03:07:01Z",
-    "us_index": 2.555,
-    "US-East": 3.8991,
-    "US-Central": 2.3577,
-    "US-West": 2.2743
-  },
-  {
-    "timestamp": "2025-10-23T03:42:28Z",
-    "us_index": 2.5552,
-    "US-East": 3.9,
-    "US-Central": 2.3577,
-    "US-West": 2.2745
-  },
-  {
-    "timestamp": "2025-10-23T04:24:55Z",
-    "us_index": 2.5554,
-    "US-East": 3.9009,
-    "US-Central": 2.3578,
-    "US-West": 2.2747
-  },
-  {
-    "timestamp": "2025-10-23T05:22:02Z",
-    "us_index": 2.5555,
-    "US-East": 3.9018,
-    "US-Central": 2.3578,
-    "US-West": 2.2749
-  },
-  {
-    "timestamp": "2025-10-23T06:32:29Z",
-    "us_index": 2.5557,
-    "US-East": 3.9028,
-    "US-Central": 2.3578,
-    "US-West": 2.2751
-  },
-  {
-    "timestamp": "2025-10-23T07:22:48Z",
-    "us_index": 2.5559,
-    "US-East": 3.9038,
-    "US-Central": 2.3579,
-    "US-West": 2.2752
-  },
-  {
-    "timestamp": "2025-10-23T07:57:02Z",
-    "us_index": 2.556,
-    "US-East": 3.9048,
-    "US-Central": 2.3579,
-    "US-West": 2.2754
-  },
-  {
-    "timestamp": "2025-10-23T08:14:58Z",
-    "us_index": 2.5562,
-    "US-East": 3.9058,
-    "US-Central": 2.3579,
-    "US-West": 2.2756
-  },
-  {
-    "timestamp": "2025-10-23T08:34:23Z",
-    "us_index": 2.5564,
-    "US-East": 3.9068,
-    "US-Central": 2.358,
-    "US-West": 2.2758
-  },
-  {
-    "timestamp": "2025-10-23T09:15:09Z",
-    "us_index": 2.5566,
-    "US-East": 3.9079,
-    "US-Central": 2.358,
-    "US-West": 2.276
-  },
-  {
-    "timestamp": "2025-10-23T09:23:38Z",
-    "us_index": 2.5568,
-    "US-East": 3.909,
-    "US-Central": 2.3581,
-    "US-West": 2.2763
-  },
-  {
-    "timestamp": "2025-10-23T11:49:34Z",
-    "us_index": 2.557,
-    "US-East": 3.9101,
-    "US-Central": 2.3581,
-    "US-West": 2.2765
-  },
-  {
-    "timestamp": "2025-10-23T12:45:49Z",
-    "us_index": 2.5572,
-    "US-East": 3.9113,
-    "US-Central": 2.3581,
-    "US-West": 2.2767
-  },
-  {
-    "timestamp": "2025-10-23T13:34:40Z",
-    "us_index": 2.5574,
-    "US-East": 3.9124,
-    "US-Central": 2.3582,
-    "US-West": 2.2769
-  },
-  {
-    "timestamp": "2025-10-23T14:25:07Z",
-    "us_index": 2.5576,
-    "US-East": 3.9136,
-    "US-Central": 2.3582,
-    "US-West": 2.2772
-  },
-  {
-    "timestamp": "2025-10-23T15:23:30Z",
-    "us_index": 2.5578,
-    "US-East": 3.9149,
-    "US-Central": 2.3583,
-    "US-West": 2.2774
-  },
-  {
-    "timestamp": "2025-10-23T16:29:45Z",
-    "us_index": 2.5581,
-    "US-East": 3.9161,
-    "US-Central": 2.3583,
-    "US-West": 2.2776
-  },
-  {
-    "timestamp": "2025-10-23T17:21:35Z",
-    "us_index": 2.5583,
-    "US-East": 3.9174,
-    "US-Central": 2.3584,
-    "US-West": 2.2779
-  },
-  {
-    "timestamp": "2025-10-23T18:32:04Z",
-    "us_index": 2.5585,
-    "US-East": 3.9186,
-    "US-Central": 2.3584,
-    "US-West": 2.2782
-  },
-  {
-    "timestamp": "2025-10-23T18:51:28Z",
-    "us_index": 2.5588,
-    "US-East": 3.92,
-    "US-Central": 2.3585,
-    "US-West": 2.2784
-  },
-  {
-    "timestamp": "2025-10-23T19:01:14Z",
-    "us_index": 2.559,
-    "US-East": 3.9213,
-    "US-Central": 2.3585,
-    "US-West": 2.2787
-  },
-  {
-    "timestamp": "2025-10-23T19:11:45Z",
-    "us_index": 2.5593,
-    "US-East": 3.9227,
-    "US-Central": 2.3586,
-    "US-West": 2.2789
-  },
-  {
     "timestamp": "2025-10-23T19:20:47Z",
-    "us_index": 2.5595,
-    "US-East": 3.9241,
-    "US-Central": 2.3586,
-    "US-West": 2.2792
+    "us_index": 2.5514,
+    "US-East": 3.8786,
+    "US-Central": 2.357,
+    "US-West": 2.2704
   },
   {
     "timestamp": "2025-10-23T19:42:21Z",
-    "us_index": 2.5598,
-    "US-East": 3.9255,
-    "US-Central": 2.3587,
-    "US-West": 2.2795
+    "us_index": 2.5515,
+    "US-East": 3.8791,
+    "US-Central": 2.357,
+    "US-West": 2.2705
   }
 ]
