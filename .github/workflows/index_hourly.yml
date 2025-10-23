@@ -16,7 +16,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COMMIT_DATA: "true"  
+  COMMIT_DATA: "true"
 
 jobs:
   build-and-bundle:
@@ -27,13 +27,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name:  Setup Python
+      - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
 
-      - name:  Install dependencies
+      - name: Install dependencies
         run: |
           set -e
           python -m pip install --upgrade pip
@@ -41,7 +41,7 @@ jobs:
           playwright install chromium || true
           playwright install-deps || true
 
-      - name:  Run hourly scrape + index (master runner)
+      - name: Run hourly scrape + index (master runner)
         env:
           HCPI_DATABASE_URL: ${{ secrets.HCPI_DATABASE_URL }}
           LAMBDA_API_KEY:    ${{ secrets.LAMBDA_API_KEY }}
@@ -53,7 +53,20 @@ jobs:
             || echo "master_runner reported issues (continuing)"
           echo "Pipeline execution complete."
 
-      - name:  Verify generated data & history
+      # NEW: backfill legacy provider CSVs into hcpi/hcpi_history.json (H100 + On-Demand)
+      - name: Backfill legacy history into HCPI
+        run: |
+          set -e
+          if [ -f scripts/backfill_legacy_to_hcpi.py ] && ls data/history/*_history.csv >/dev/null 2>&1; then
+            echo "Found legacy history files. Running backfill…"
+            python scripts/backfill_legacy_to_hcpi.py --src data/history --write
+            echo "Backfill complete. Preview last 5 points:"
+            tail -n 10 hcpi/hcpi_history.json || true
+          else
+            echo "No legacy backfill needed (script or *_history.csv not present)."
+          fi
+
+      - name: Verify generated data & history
         run: |
           echo "==== Latest CSV ===="
           if [ -f data/derived/provider_scores_latest.csv ]; then
@@ -82,14 +95,14 @@ jobs:
           echo "==== HCPI History JSON ===="
           if [ -f hcpi/hcpi_history.json ]; then
             echo "Number of historical data points:"
-            cat hcpi/hcpi_history.json | grep -o '"timestamp"' | wc -l || true
+            grep -o '"timestamp"' hcpi/hcpi_history.json | wc -l || true
             echo "Last entry:"
             tail -10 hcpi/hcpi_history.json || true
           else
             echo "WARNING: HCPI history JSON not found (will be created)"
           fi
 
-      - name:  Commit generated data to repository
+      - name: Commit generated data to repository
         if: env.COMMIT_DATA == 'true'
         uses: EndBug/add-and-commit@v9
         with:
@@ -133,7 +146,7 @@ jobs:
           echo "==== public/ tree ===="
           find public -type f -print
 
-      - name:  Upload Pages artifact
+      - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: public
@@ -148,6 +161,6 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - name:  Deploy to GitHub Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
