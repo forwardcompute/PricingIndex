@@ -207,7 +207,8 @@ def _append_history_indices(hcpi_result: dict):
     except Exception:
         arr = []
     arr.append(row)
-    # Sort by timestamp in case of backfills
+
+    # Sort by timestamp for stability (handles backfills)
     arr = sorted(arr, key=lambda r: r.get("timestamp", ""))
 
     if HISTORY_RETENTION_HOURS > 0:
@@ -366,5 +367,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
