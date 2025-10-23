@@ -272,7 +272,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         df_idx, 
         verbose=verbose,
         apply_smoothing=True,
-        smoothing_window=24
+        smoothing_window=48
     )
 
     # ── Write artifacts
