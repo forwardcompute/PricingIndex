@@ -19,22 +19,23 @@ from roi_calculator import (
 )
 
 # ──────────────────────────────────────────────────────────────────────────────
-# Paths
+# Paths & Retention
 DERIVED_DIR = Path("data/derived")
 HISTORY_DIR = Path("data/history")
 HCPI_DIR = Path("hcpi")
 PUBLIC_DIR = Path("public")
 
+# Keep N hourly points in hcpi_history.json (0 = keep all). Default 1 year.
+HISTORY_RETENTION_HOURS = int(os.getenv("HISTORY_RETENTION_HOURS", "8760"))
 
 def _ts_tag(dt: datetime) -> str:
     return dt.strftime("%Y%m%d_%H%M%S")
 
-
 # ──────────────────────────────────────────────────────────────────────────────
-# Normalisation for provider rows (canonical CSV)
+# Normalise provider rows (canonical CSV for latest + history)
 def _normalize_scrape_columns(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Produce a canonical provider rows table used for latest + history CSVs.
+    Canonical provider schema used for latest + history CSVs.
     Ensures per-GPU price lives in `effective_price_usd_per_gpu_hr`.
     """
     c = {
@@ -45,7 +46,6 @@ def _normalize_scrape_columns(df: pd.DataFrame) -> pd.DataFrame:
         "price": "effective_price_usd_per_gpu_hr",
     }
     out = df.rename(columns=c).copy()
-
     needed = [
         "provider",
         "region",
@@ -61,37 +61,27 @@ def _normalize_scrape_columns(df: pd.DataFrame) -> pd.DataFrame:
         if k not in out.columns:
             out[k] = None
 
-    # Unify H100 SXM under H100 label (display consistency only)
-    out["gpu_model"] = (
-        out["gpu_model"].astype(str).str.replace(r"\bH100\s*SXM\b", "H100", regex=True)
-    )
+    # Unify H100 SXM to H100 (display only; does not change price)
+    out["gpu_model"] = out["gpu_model"].astype(str).str.replace(r"\bH100\s*SXM\b", "H100", regex=True)
 
     # Types
     out["gpu_count"] = pd.to_numeric(out["gpu_count"], errors="coerce").fillna(1).astype(int)
-    out["effective_price_usd_per_gpu_hr"] = pd.to_numeric(
-        out["effective_price_usd_per_gpu_hr"], errors="coerce"
-    )
+    out["effective_price_usd_per_gpu_hr"] = pd.to_numeric(out["effective_price_usd_per_gpu_hr"], errors="coerce")
 
-    # Keep only valid price rows
+    # Keep valid price rows
     out = out[out["effective_price_usd_per_gpu_hr"].notna() & (out["effective_price_usd_per_gpu_hr"] > 0)]
     return out[needed]
 
-
-# ──────────────────────────────────────────────────────────────────────────────
 # Adapter for index_calculator (do NOT modify index_calculator itself)
 def _prepare_index_input(df_scraped: pd.DataFrame) -> pd.DataFrame:
     """
-    Adapt scraped df to the schema expected by index_calculator.calculate_hcpi:
-        [provider, region, price_hourly_usd, gpu_count]
+    Schema for calculate_hcpi(): [provider, region, price_hourly_usd, gpu_count]
     """
     df = df_scraped.copy()
 
-    # Map to price_hourly_usd (prefer normalized per-GPU price if present)
     if "price_hourly_usd" not in df.columns:
         if "effective_price_usd_per_gpu_hr" in df.columns:
-            df["price_hourly_usd"] = pd.to_numeric(
-                df["effective_price_usd_per_gpu_hr"], errors="coerce"
-            )
+            df["price_hourly_usd"] = pd.to_numeric(df["effective_price_usd_per_gpu_hr"], errors="coerce")
         else:
             df["price_hourly_usd"] = pd.to_numeric(df.get("price"), errors="coerce")
 
@@ -106,70 +96,43 @@ def _prepare_index_input(df_scraped: pd.DataFrame) -> pd.DataFrame:
     out = out[out["price_hourly_usd"] > 0]
     return out
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 def _ensure_dirs():
     DERIVED_DIR.mkdir(parents=True, exist_ok=True)
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     HCPI_DIR.mkdir(parents=True, exist_ok=True)
 
-
 def _write_latest_artifacts(df_scraped: pd.DataFrame, hcpi_result, ts: str, verbose: bool):
-    """
-    1) Write provider latest CSV
-    2) Save hcpi full/summary and copy to latest pointers
-    3) Ensure ROI/compute snapshot files exist
-    """
     _ensure_dirs()
 
-    # Provider latest
+    # 1) Provider latest
     df_out = _normalize_scrape_columns(df_scraped)
     (DERIVED_DIR / "provider_scores_latest.csv").write_text(df_out.to_csv(index=False))
 
-    # HCPI jsons
+    # 2) HCPI JSONs (full + summary) + latest pointers
     full_path, summary_path = save_hcpi_results(hcpi_result, prefix=f"{HCPI_DIR}/hcpi_{ts}")
     Path(HCPI_DIR / "hcpi_latest_full.json").write_bytes(Path(full_path).read_bytes())
     Path(HCPI_DIR / "hcpi_latest_summary.json").write_bytes(Path(summary_path).read_bytes())
 
-    # ROI & snapshot scaffolding
+    # 3) ROI scaffolding (unchanged)
     roi_csv = DERIVED_DIR / "roi_comparison.csv"
     snap_csv = DERIVED_DIR / "compute_calculator_snapshot.csv"
     if not roi_csv.exists():
         pd.DataFrame(
-            columns=[
-                "gpu_model",
-                "gpu_count",
-                "duration",
-                "best_provider",
-                "best_region",
-                "total_cost_usd",
-                "price_per_gpu_hr",
-                "timestamp",
-            ]
+            columns=["gpu_model","gpu_count","duration","best_provider","best_region",
+                     "total_cost_usd","price_per_gpu_hr","timestamp"]
         ).to_csv(roi_csv, index=False)
     if not snap_csv.exists():
         pd.DataFrame(
-            columns=[
-                "gpu_model",
-                "provider_type",
-                "$/GPU-hr",
-                "TOTAL",
-                "price_lo_usd",
-                "price_md_usd",
-                "price_hi_usd",
-                "term_hours",
-                "gpu_count",
-                "region",
-                "n_quotes",
-                "source",
-            ]
+            columns=["gpu_model","provider_type","$/GPU-hr","TOTAL",
+                     "price_lo_usd","price_md_usd","price_hi_usd","term_hours",
+                     "gpu_count","region","n_quotes","source"]
         ).to_csv(snap_csv, index=False)
 
     if verbose:
         print(f"wrote {DERIVED_DIR/'provider_scores_latest.csv'}")
         print(f"wrote {HCPI_DIR/'hcpi_latest_full.json'}")
         print(f"wrote {HCPI_DIR/'hcpi_latest_summary.json'}")
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # History appenders (PROVIDER + INDEX)
@@ -185,27 +148,19 @@ def _append_history_quotes(df_scraped: pd.DataFrame, run_iso_ts: str):
 
     norm = _normalize_scrape_columns(df_scraped).copy()
 
-    # Preserve provider quote time (if provided by scraper)
+    # Preserve individual quote time if scrapers provided one
     if "timestamp" in norm.columns:
         norm.rename(columns={"timestamp": "quote_timestamp"}, inplace=True)
     else:
         norm["quote_timestamp"] = pd.NaT
 
-    # Run timestamp first for readability
+    # Put run timestamp first
     norm.insert(0, "run_timestamp", run_iso_ts)
 
-    # Final column order
     cols_order = [
-        "run_timestamp",
-        "quote_timestamp",
-        "provider",
-        "region",
-        "gpu_model",
-        "type",
-        "duration",
-        "gpu_count",
-        "effective_price_usd_per_gpu_hr",
-        "priceiq_score",
+        "run_timestamp", "quote_timestamp",
+        "provider", "region", "gpu_model", "type", "duration", "gpu_count",
+        "effective_price_usd_per_gpu_hr", "priceiq_score",
     ]
     for c in cols_order:
         if c not in norm.columns:
@@ -215,21 +170,17 @@ def _append_history_quotes(df_scraped: pd.DataFrame, run_iso_ts: str):
     write_header = not hist_path.exists()
     norm.to_csv(hist_path, mode="a", header=write_header, index=False)
 
-
 def _append_history_indices(hcpi_result: dict):
     """
     Append index values to:
       - data/history/index_history.csv  (long CSV)
       - hcpi/hcpi_history.csv           (site CSV)
-      - hcpi/hcpi_history.json          (rolling JSON ~720 points)
+      - hcpi/hcpi_history.json          (rolling JSON with retention)
     """
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     HCPI_DIR.mkdir(parents=True, exist_ok=True)
 
-    ts_iso = (
-        hcpi_result.get("metadata", {}).get("timestamp")
-        or datetime.now(timezone.utc).isoformat()
-    )
+    ts_iso = hcpi_result.get("metadata", {}).get("timestamp") or datetime.now(timezone.utc).isoformat()
     reg = hcpi_result.get("regional_indices", {}) or {}
     row = {
         "timestamp": ts_iso,
@@ -239,18 +190,15 @@ def _append_history_indices(hcpi_result: dict):
         "US-West": reg.get("US-West"),
     }
 
-    # A) repo-wide index history
+    # (A) long CSV under data/history/
     idx_hist_csv = HISTORY_DIR / "index_history.csv"
-    pd.DataFrame([row]).to_csv(
-        idx_hist_csv, mode="a", header=not idx_hist_csv.exists(), index=False
-    )
+    pd.DataFrame([row]).to_csv(idx_hist_csv, mode="a", header=not idx_hist_csv.exists(), index=False)
 
-    # B) site artifacts
+    # (B) site CSV
     hcpi_hist_csv = HCPI_DIR / "hcpi_history.csv"
-    pd.DataFrame([row]).to_csv(
-        hcpi_hist_csv, mode="a", header=not hcpi_hist_csv.exists(), index=False
-    )
+    pd.DataFrame([row]).to_csv(hcpi_hist_csv, mode="a", header=not hcpi_hist_csv.exists(), index=False)
 
+    # (C) rolling JSON with retention
     hcpi_hist_json = HCPI_DIR / "hcpi_history.json"
     try:
         arr = json.loads(hcpi_hist_json.read_text())
@@ -259,9 +207,14 @@ def _append_history_indices(hcpi_result: dict):
     except Exception:
         arr = []
     arr.append(row)
-    arr = arr[-720:]  # keep ~30 days of hourly points
-    hcpi_hist_json.write_text(json.dumps(arr, indent=2))
+    # Sort by timestamp in case of backfills
+    arr = sorted(arr, key=lambda r: r.get("timestamp", ""))
 
+    if HISTORY_RETENTION_HOURS > 0:
+        # Approx: one point per hour
+        arr = arr[-HISTORY_RETENTION_HOURS:]
+
+    hcpi_hist_json.write_text(json.dumps(arr, indent=2))
 
 # ──────────────────────────────────────────────────────────────────────────────
 def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
@@ -280,7 +233,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         print("no data scraped")
         return None, None
 
-    # Keep a raw snapshot (debug aid)
+    # Keep a raw snapshot (debug)
     try:
         raw_csv = f"scraped_data_{ts}.csv"
         df_scraped.to_csv(raw_csv, index=False)
@@ -289,7 +242,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
     except Exception as e:
         print(f"raw csv save failed: {e}")
 
-    # ROI preview (non-blocking)
+    # Optional ROI preview (non-blocking)
     try:
         df_cost = calculate_total_cost(df_scraped, duration_hours=1)
         if "perf_score" not in df_cost.columns:
@@ -297,9 +250,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         if "utilisation" not in df_cost.columns:
             df_cost["utilisation"] = 1.0
         df_roi = calculate_basic_roi(df_cost, perf_col="perf_score")
-        df_u_roi = calculate_utilisation_adjusted_roi(
-            df_roi, perf_col="perf_score", utilisation_col="utilisation"
-        )
+        df_u_roi = calculate_utilisation_adjusted_roi(df_roi, perf_col="perf_score", utilisation_col="utilisation")
         if verbose:
             print("\n" + "=" * 70)
             print("STEP 1b: ROI preview")
@@ -309,13 +260,12 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         if verbose:
             print(f"roi step skipped: {e}")
 
-    # ── Index
+    # ── Index calc (using adapter; calculator unchanged)
     if verbose:
         print("\n" + "=" * 70)
         print("STEP 2: calculate HCPI")
         print("-" * 70 + "\n")
 
-    # IMPORTANT: adapt columns to calculator schema (do NOT change calculator)
     df_idx = _prepare_index_input(df_scraped)
     hcpi_result = calculate_hcpi(df_idx, verbose=verbose)
 
@@ -325,7 +275,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
     except Exception as e:
         print(f"artifact write failed: {e}")
 
-    # ── Append histories (providers + index)
+    # ── Append histories (providers + index) — fail loudly if broken
     try:
         run_iso_ts = hcpi_result.get("metadata", {}).get("timestamp") or start_dt.isoformat()
         _append_history_quotes(df_scraped, run_iso_ts)
@@ -334,7 +284,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         import traceback
         print(f"history append failed: {type(e).__name__}: {e}")
         traceback.print_exc()
-        raise  # fail loudly so CI shows why
+        raise
 
     # ── Report
     if verbose:
@@ -360,7 +310,6 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
 
     return df_scraped, hcpi_result
 
-
 # ──────────────────────────────────────────────────────────────────────────────
 def run_continuous(interval_seconds: int, database_url: str, verbose: bool = True):
     cycle = 1
@@ -368,9 +317,7 @@ def run_continuous(interval_seconds: int, database_url: str, verbose: bool = Tru
     while True:
         try:
             print(f"\n{'='*70}\nCYCLE #{cycle}\n{'='*70}\n")
-            df_scraped, hcpi_result = run_single_scrape_and_calculate(
-                database_url=database_url, verbose=verbose
-            )
+            df_scraped, hcpi_result = run_single_scrape_and_calculate(database_url=database_url, verbose=verbose)
             if df_scraped is None or hcpi_result is None:
                 print("cycle produced no results")
             cycle += 1
@@ -385,19 +332,15 @@ def run_continuous(interval_seconds: int, database_url: str, verbose: bool = Tru
             print(f"\ncycle error: {e}")
             time.sleep(interval_seconds)
 
-
 def run_scheduled_cron(database_url: str, verbose: bool = True) -> int:
     try:
-        df_scraped, hcpi_result = run_single_scrape_and_calculate(
-            database_url=database_url, verbose=verbose
-        )
+        df_scraped, hcpi_result = run_single_scrape_and_calculate(database_url=database_url, verbose=verbose)
         if df_scraped is None or hcpi_result is None:
             return 1
         return 0
     except Exception as e:
         print(f"fatal error: {e}")
         return 1
-
 
 def main():
     parser = argparse.ArgumentParser(description="HCPI Master Runner")
@@ -412,17 +355,16 @@ def main():
     database_url = args.db or os.getenv("HCPI_DATABASE_URL") or "sqlite:///hcpi.db"
     if verbose:
         print(f"DB URL: {database_url}")
+        print(f"HISTORY_RETENTION_HOURS={HISTORY_RETENTION_HOURS}")
 
     if args.cron:
         sys.exit(run_scheduled_cron(database_url=database_url, verbose=verbose))
     elif args.continuous:
-        run_continuous(
-            interval_seconds=args.interval, database_url=database_url, verbose=verbose
-        )
+        run_continuous(interval_seconds=args.interval, database_url=database_url, verbose=verbose)
     else:
         run_single_scrape_and_calculate(database_url=database_url, verbose=verbose)
 
-
 if __name__ == "__main__":
     main()
+
 
