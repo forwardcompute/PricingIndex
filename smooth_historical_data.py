@@ -60,8 +60,14 @@ def smooth_historical_index(
     
     # Convert to DataFrame
     df = pd.DataFrame(data)
-    df['timestamp'] = pd.to_datetime(df['timestamp'])
+    # Handle multiple timestamp formats flexibly
+    df['timestamp'] = pd.to_datetime(df['timestamp'], utc=True, errors='coerce', format='mixed')
+    df = df.dropna(subset=['timestamp'])  # Remove any unparseable timestamps
     df = df.sort_values('timestamp')
+    
+    if df.empty:
+        print("ERROR: All timestamps failed to parse")
+        return False
     
     print(f"Date range: {df['timestamp'].min()} to {df['timestamp'].max()}")
     
@@ -151,9 +157,9 @@ def main():
     )
     
     if success:
-        print("\n Smoothing complete!")
+        print("\n✅ Smoothing complete!")
     else:
-        print("\n Smoothing failed")
+        print("\n❌ Smoothing failed")
         return 1
     
     return 0
