@@ -151,43 +151,7 @@ jobs:
             echo "✅ Copied index.html"
           else
             echo "⚠️  No dashboard HTML found, creating placeholder..."
-            cat > public/index.html << 'EOF'
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Forward Compute Index</title>
-  <style>
-    body {
-      font-family: system-ui, -apple-system, sans-serif;
-      padding: 24px;
-      color: #e7edf3;
-      background: #0f1216;
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    h1 { color: #58a6ff; }
-    code {
-      background: #161b22;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-size: 0.9em;
-    }
-  </style>
-</head>
-<body>
-  <h1>Forward Compute Index</h1>
-  <p>Dashboard placeholder. Add <code>docs/index.html</code> to the repository to display your index.</p>
-  <h2>Available Data Files:</h2>
-  <ul>
-    <li><a href="hcpi/hcpi_latest_summary.json">Latest Index Summary</a></li>
-    <li><a href="hcpi/hcpi_history.json">Historical Index Data</a></li>
-    <li><a href="data/derived/provider_scores_latest.csv">Latest Provider Scores</a></li>
-  </ul>
-</body>
-</html>
-EOF
+            echo '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Forward Compute Index</title><style>body{font-family:system-ui,-apple-system,sans-serif;padding:24px;color:#e7edf3;background:#0f1216;max-width:800px;margin:0 auto}h1{color:#58a6ff}code{background:#161b22;padding:2px 6px;border-radius:3px;font-size:0.9em}</style></head><body><h1>Forward Compute Index</h1><p>Dashboard placeholder. Add <code>docs/index.html</code> to the repository to display your index.</p><h2>Available Data Files:</h2><ul><li><a href="hcpi/hcpi_latest_summary.json">Latest Index Summary</a></li><li><a href="hcpi/hcpi_history.json">Historical Index Data</a></li><li><a href="data/derived/provider_scores_latest.csv">Latest Provider Scores</a></li></ul></body></html>' > public/index.html
             echo "✅ Created placeholder HTML"
           fi
           
@@ -213,7 +177,7 @@ EOF
           if [ -f public/hcpi/hcpi_history.json ]; then
             points=$(grep -o '"timestamp"' public/hcpi/hcpi_history.json | wc -l)
             size=$(ls -lh public/hcpi/hcpi_history.json | awk '{print $5}')
-            echo " HCPI History JSON: $points points, $size"
+            echo "✅ HCPI History JSON: $points points, $size"
           fi
 
           echo ""
@@ -222,7 +186,7 @@ EOF
           
           echo ""
           echo "======================================================================"
-          echo "Static site preparation complete"
+          echo "✅ Static site preparation complete"
           echo "======================================================================"
 
       - name: Upload Pages artifact
@@ -254,5 +218,4 @@ EOF
           echo "https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
           echo ""
           echo "======================================================================"
-
 
