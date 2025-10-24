@@ -356,9 +356,10 @@ def _append_history_indices(hcpi_result: dict):
                 ).mean()
 
     # Extract ONLY the smoothed value for the NEW point (last row)
+    # IMPORTANT: Use the original raw timestamp, not from df_smoothed (which may have duplicates)
     if len(df_smoothed) > 0:
         last_smoothed = df_smoothed.iloc[-1]
-        smoothed_row = {"timestamp": last_smoothed["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")}
+        smoothed_row = {"timestamp": row["timestamp"]}  # Use NEW raw timestamp
         for col in numeric_cols:
             val = last_smoothed[col]
             if pd.notna(val):
