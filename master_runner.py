@@ -349,10 +349,12 @@ def _append_history_indices(hcpi_result: dict):
     if smooth_window > 0:
         for col in numeric_cols:
             if col in df_smoothed.columns:
+                # Use center=False so new point is smoothed ONCE when added
+                # and never changes afterward
                 df_smoothed[col] = df_smoothed[col].rolling(
                     window=smooth_window,
                     min_periods=1,
-                    center=False  # Backward-looking
+                    center=False  # Backward-looking - smooth once and done
                 ).mean()
 
     # Extract ONLY the smoothed value for the NEW point (last row)
