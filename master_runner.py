@@ -321,14 +321,24 @@ def _append_history_indices(hcpi_result: dict):
 
     # (C) rolling JSON - smooth NEW point only, don't re-smooth history
     hcpi_hist_json = HCPI_DIR / "hcpi_history.json"
-    if hcpi_hist_json.exists():
-        existing = json.loads(hcpi_hist_json.read_text())
+    hcpi_hist_csv = HCPI_DIR / "hcpi_history.csv"
+    
+    # Load RAW values from CSV for smoothing calculation (NOT from JSON which is already smoothed!)
+    if hcpi_hist_csv.exists():
+        df_raw = pd.read_csv(hcpi_hist_csv)
+        df_raw["timestamp"] = pd.to_datetime(df_raw["timestamp"], utc=True, errors="coerce")
+        df_raw = df_raw.dropna(subset=["timestamp"]).sort_values("timestamp")
+        
+        # Convert to list of dicts for consistency
+        raw_history = df_raw.to_dict('records')
     else:
-        existing = []
-
-    # Convert existing + new to DataFrame to calculate smoothed value for NEW point
-    temp_data = existing + [row]
-    df = pd.DataFrame(temp_data)
+        raw_history = []
+    
+    # Add new raw point
+    raw_with_new = raw_history + [row]
+    
+    # Convert to DataFrame for smoothing calculation
+    df = pd.DataFrame(raw_with_new)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
 
