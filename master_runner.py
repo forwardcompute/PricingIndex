@@ -319,18 +319,16 @@ def _append_history_indices(hcpi_result: dict):
     hcpi_hist_csv = HCPI_DIR / "hcpi_history.csv"
     pd.DataFrame([row]).to_csv(hcpi_hist_csv, mode="a", header=not hcpi_hist_csv.exists(), index=False)
 
-    # (C) rolling JSON with retention and SMOOTHING
+    # (C) rolling JSON - smooth NEW point only, don't re-smooth history
     hcpi_hist_json = HCPI_DIR / "hcpi_history.json"
     if hcpi_hist_json.exists():
         existing = json.loads(hcpi_hist_json.read_text())
     else:
         existing = []
 
-    # Append new raw row
-    existing.append(row)
-
-    # Convert to DataFrame for processing
-    df = pd.DataFrame(existing)
+    # Convert existing + new to DataFrame to calculate smoothed value for NEW point
+    temp_data = existing + [row]
+    df = pd.DataFrame(temp_data)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
 
@@ -339,42 +337,58 @@ def _append_history_indices(hcpi_result: dict):
         cutoff = datetime.now(timezone.utc) - pd.Timedelta(hours=HISTORY_RETENTION_HOURS)
         df = df[df["timestamp"] >= cutoff]
 
-    # Apply smoothing to numeric columns (ONCE, with centered window)
+    # Convert to numeric for smoothing calculation
     numeric_cols = ["us_index", "US-East", "US-Central", "US-West"]
-    
-    # Convert to numeric first
     for col in numeric_cols:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     
-    # Apply centered rolling average (48-hour window)
-    # NOTE: Using center=False so new data points update immediately
-    # center=True would require 24 hours of future data before updating
+    # Calculate smoothed values (to get the smoothed value for the NEW point)
     smooth_window = int(os.getenv("SMOOTH_INDEX_WINDOW_HOURS", "48"))
+    df_smoothed = df.copy()
     if smooth_window > 0:
         for col in numeric_cols:
-            if col in df.columns:
-                df[col] = df[col].rolling(
+            if col in df_smoothed.columns:
+                df_smoothed[col] = df_smoothed[col].rolling(
                     window=smooth_window,
                     min_periods=1,
-                    center=False  # Backward-looking so new data updates immediately
+                    center=False  # Backward-looking
                 ).mean()
 
-    # Write back as list[dict] with ISO timestamps and rounded numerics (SMOOTHED)
-    out_records = []
-    for _, r in df.iterrows():
-        rec = {"timestamp": r["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")}
+    # Extract ONLY the smoothed value for the NEW point (last row)
+    if len(df_smoothed) > 0:
+        last_smoothed = df_smoothed.iloc[-1]
+        smoothed_row = {"timestamp": last_smoothed["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")}
         for col in numeric_cols:
-            val = r[col]
+            val = last_smoothed[col]
             if pd.notna(val):
-                rec[col] = round(float(val), 4)
-        out_records.append(rec)
+                smoothed_row[col] = round(float(val), 4)
+    else:
+        smoothed_row = row
 
-    hcpi_hist_json.write_text(json.dumps(out_records, indent=2))
+    # Keep existing history unchanged, just append the NEW smoothed point
+    # Re-load existing to avoid any modifications
+    if hcpi_hist_json.exists():
+        existing = json.loads(hcpi_hist_json.read_text())
+    else:
+        existing = []
+    
+    # Apply retention to existing history
+    if HISTORY_RETENTION_HOURS > 0:
+        cutoff = datetime.now(timezone.utc) - pd.Timedelta(hours=HISTORY_RETENTION_HOURS)
+        existing = [
+            rec for rec in existing 
+            if pd.to_datetime(rec["timestamp"], utc=True, errors="coerce") >= cutoff
+        ]
+    
+    # Append ONLY the new smoothed point
+    existing.append(smoothed_row)
+
+    # Write back
+    hcpi_hist_json.write_text(json.dumps(existing, indent=2))
 
     # Return last smoothed value and timestamp
-    last = out_records[-1]
-    return float(last.get("us_index")) if last.get("us_index") is not None else None, last["timestamp"]
+    return float(smoothed_row.get("us_index")) if smoothed_row.get("us_index") is not None else None, smoothed_row["timestamp"]
 
 def _sync_latest_to_smoothed(us_index_smoothed: float, ts_iso: str):
     """
