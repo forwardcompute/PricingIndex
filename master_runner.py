@@ -7,6 +7,7 @@ import argparse
 from pathlib import Path
 from datetime import datetime, timezone
 import pandas as pd
+import numpy as np
 
 from scrapers_all_providers import scrape_all_providers
 from index_calculator import calculate_hcpi, format_hcpi_report, save_hcpi_results
@@ -27,11 +28,118 @@ PUBLIC_DIR = Path("public")
 
 # Keep N hourly points in hcpi_history.json (0 = keep all). Default 1 year.
 HISTORY_RETENTION_HOURS = int(os.getenv("HISTORY_RETENTION_HOURS", "8760"))
-# NEW: trailing rolling window (hours) for smoothing history + header
-SMOOTH_INDEX_WINDOW_HOURS = int(os.getenv("SMOOTH_INDEX_WINDOW_HOURS", "48"))
+
+# Outlier detection parameters
+OUTLIER_IQR_MULTIPLIER = float(os.getenv("OUTLIER_IQR_MULTIPLIER", "3.0"))  # 3.0 = aggressive, 1.5 = conservative
+OUTLIER_MIN_SAMPLES = int(os.getenv("OUTLIER_MIN_SAMPLES", "5"))  # need at least this many samples to detect outliers
+OUTLIER_PRICE_FLOOR = float(os.getenv("OUTLIER_PRICE_FLOOR", "0.10"))  # absolute minimum price threshold
+OUTLIER_PRICE_CEILING = float(os.getenv("OUTLIER_PRICE_CEILING", "15.0"))  # absolute maximum price threshold
 
 def _ts_tag(dt: datetime) -> str:
     return dt.strftime("%Y%m%d_%H%M%S")
+
+# ──────────────────────────────────────────────────────────────────────────────
+# NEW: Outlier Detection & Removal
+def _remove_outliers(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
+    """
+    Remove outliers from scraped data using IQR method per provider + region combination.
+    This prevents bad data from corrupting the index.
+    
+    Steps:
+    1. Apply absolute floor/ceiling thresholds
+    2. Group by provider+region
+    3. Calculate IQR for each group
+    4. Remove prices outside [Q1 - multiplier*IQR, Q3 + multiplier*IQR]
+    5. Log what was removed
+    """
+    if df.empty or 'effective_price_usd_per_gpu_hr' not in df.columns:
+        return df
+    
+    initial_count = len(df)
+    price_col = 'effective_price_usd_per_gpu_hr'
+    
+    # Step 1: Apply absolute thresholds (catch obviously bad data)
+    absolute_mask = (
+        (df[price_col] >= OUTLIER_PRICE_FLOOR) & 
+        (df[price_col] <= OUTLIER_PRICE_CEILING)
+    )
+    
+    removed_absolute = df[~absolute_mask].copy()
+    df = df[absolute_mask].copy()
+    
+    if verbose and len(removed_absolute) > 0:
+        print(f"\n🚫 Removed {len(removed_absolute)} quotes outside absolute bounds [${OUTLIER_PRICE_FLOOR:.2f}, ${OUTLIER_PRICE_CEILING:.2f}]:")
+        for _, row in removed_absolute.iterrows():
+            print(f"   - {row.get('provider', 'unknown')} / {row.get('region', 'unknown')}: ${row[price_col]:.2f}/hr")
+    
+    # Step 2: IQR-based outlier detection per provider+region group
+    if len(df) < OUTLIER_MIN_SAMPLES:
+        if verbose:
+            print(f"⚠️  Only {len(df)} samples after absolute filtering - skipping IQR outlier detection")
+        return df
+    
+    # Create grouping columns
+    df['_group'] = df['provider'].astype(str) + '|' + df['region'].astype(str)
+    
+    removed_iqr = []
+    kept_indices = []
+    
+    for group_name, group_df in df.groupby('_group'):
+        if len(group_df) < OUTLIER_MIN_SAMPLES:
+            # Not enough samples in this group - keep all
+            kept_indices.extend(group_df.index.tolist())
+            continue
+        
+        # Calculate IQR
+        Q1 = group_df[price_col].quantile(0.25)
+        Q3 = group_df[price_col].quantile(0.75)
+        IQR = Q3 - Q1
+        
+        # Define outlier bounds
+        lower_bound = Q1 - (OUTLIER_IQR_MULTIPLIER * IQR)
+        upper_bound = Q3 + (OUTLIER_IQR_MULTIPLIER * IQR)
+        
+        # Identify outliers
+        outlier_mask = (group_df[price_col] < lower_bound) | (group_df[price_col] > upper_bound)
+        
+        outliers = group_df[outlier_mask]
+        inliers = group_df[~outlier_mask]
+        
+        if len(outliers) > 0:
+            provider, region = group_name.split('|')
+            median_price = inliers[price_col].median() if len(inliers) > 0 else group_df[price_col].median()
+            
+            for _, row in outliers.iterrows():
+                removed_iqr.append({
+                    'provider': provider,
+                    'region': region,
+                    'price': row[price_col],
+                    'median': median_price,
+                    'deviation': abs(row[price_col] - median_price) / median_price * 100 if median_price > 0 else 0,
+                    'bounds': f"[{lower_bound:.2f}, {upper_bound:.2f}]"
+                })
+        
+        kept_indices.extend(inliers.index.tolist())
+    
+    # Filter to kept indices
+    df_clean = df.loc[kept_indices].copy()
+    df_clean = df_clean.drop(columns=['_group'])
+    
+    # Report
+    if verbose and len(removed_iqr) > 0:
+        print(f"\n🔍 IQR Outlier Detection (multiplier={OUTLIER_IQR_MULTIPLIER}):")
+        print(f"   Removed {len(removed_iqr)} statistical outliers:")
+        for item in removed_iqr:
+            print(f"   - {item['provider']} / {item['region']}: ${item['price']:.2f}/hr "
+                  f"(median: ${item['median']:.2f}, deviation: {item['deviation']:.0f}%, bounds: {item['bounds']})")
+    
+    removed_total = initial_count - len(df_clean)
+    if verbose and removed_total > 0:
+        removal_pct = (removed_total / initial_count) * 100
+        print(f"\n✅ Total outliers removed: {removed_total}/{initial_count} ({removal_pct:.1f}%)")
+        print(f"   Remaining clean quotes: {len(df_clean)}")
+    
+    return df_clean
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Normalise provider rows (canonical CSV for latest + history)
@@ -175,10 +283,12 @@ def _append_history_quotes(df_scraped: pd.DataFrame, run_iso_ts: str):
 def _append_history_indices(hcpi_result: dict):
     """
     Append index values to:
-      - data/history/index_history.csv  (long CSV)
-      - hcpi/hcpi_history.csv           (site CSV)
-      - hcpi/hcpi_history.json          (rolling JSON with retention, SMOOTHED)
-    Returns (last_smoothed_us_index, last_timestamp_iso)
+      - data/history/index_history.csv  (long CSV - RAW values)
+      - hcpi/hcpi_history.csv           (site CSV - RAW values)
+      - hcpi/hcpi_history.json          (rolling JSON with retention - RAW values, no retroactive smoothing)
+    
+    NEW BEHAVIOR: We do NOT smooth the entire history. History is append-only with raw values.
+    Returns (raw_us_index, timestamp_iso) for the new point only.
     """
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     HCPI_DIR.mkdir(parents=True, exist_ok=True)
@@ -193,41 +303,36 @@ def _append_history_indices(hcpi_result: dict):
         "US-West": reg.get("US-West"),
     }
 
-    # (A) long CSV under data/history/ (raw)
+    # (A) long CSV under data/history/ (raw, append-only)
     idx_hist_csv = HISTORY_DIR / "index_history.csv"
     pd.DataFrame([row]).to_csv(idx_hist_csv, mode="a", header=not idx_hist_csv.exists(), index=False)
 
-    # (B) site CSV (raw)
+    # (B) site CSV (raw, append-only)
     hcpi_hist_csv = HCPI_DIR / "hcpi_history.csv"
     pd.DataFrame([row]).to_csv(hcpi_hist_csv, mode="a", header=not hcpi_hist_csv.exists(), index=False)
 
-    # (C) rolling JSON with retention (SMOOTHED)
+    # (C) rolling JSON with retention (RAW values, no smoothing)
     hcpi_hist_json = HCPI_DIR / "hcpi_history.json"
-    try:
-        arr = json.loads(hcpi_hist_json.read_text())
-        if not isinstance(arr, list):
-            arr = []
-    except Exception:
-        arr = []
-    arr.append(row)
-    # Sort by timestamp for stability (handles backfills)
-    arr = sorted(arr, key=lambda r: r.get("timestamp", ""))
+    if hcpi_hist_json.exists():
+        existing = json.loads(hcpi_hist_json.read_text())
+    else:
+        existing = []
 
-    if HISTORY_RETENTION_HOURS > 0:
-        arr = arr[-HISTORY_RETENTION_HOURS:]
+    # Append new raw row
+    existing.append(row)
 
-    # Smooth numerics with trailing rolling mean (window = SMOOTH_INDEX_WINDOW_HOURS)
-    df = pd.DataFrame(arr)
-    # make sure timestamp is sorted and preserved as ISO strings
+    # Convert to DataFrame for retention management only
+    df = pd.DataFrame(existing)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
 
-    numeric_cols = [c for c in df.columns if c != "timestamp" and pd.api.types.is_numeric_dtype(df[c])]
-    if SMOOTH_INDEX_WINDOW_HOURS > 1 and len(df) > 0 and numeric_cols:
-        for col in numeric_cols:
-            df[col] = df[col].rolling(window=SMOOTH_INDEX_WINDOW_HOURS, min_periods=1).mean()
+    # Apply retention (remove old data)
+    if HISTORY_RETENTION_HOURS > 0:
+        cutoff = datetime.now(timezone.utc) - pd.Timedelta(hours=HISTORY_RETENTION_HOURS)
+        df = df[df["timestamp"] >= cutoff]
 
-    # Write back as list[dict] with ISO timestamps and rounded numerics
+    # Write back as list[dict] with ISO timestamps and rounded numerics (RAW, NO SMOOTHING)
+    numeric_cols = ["us_index", "US-East", "US-Central", "US-West"]
     out_records = []
     for _, r in df.iterrows():
         rec = {"timestamp": r["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -239,13 +344,13 @@ def _append_history_indices(hcpi_result: dict):
 
     hcpi_hist_json.write_text(json.dumps(out_records, indent=2))
 
-    # Return last smoothed value and timestamp
+    # Return last RAW value and timestamp (no smoothing applied)
     last = out_records[-1]
     return float(last.get("us_index")) if last.get("us_index") is not None else None, last["timestamp"]
 
-def _sync_latest_to_smoothed(us_index_smoothed: float, ts_iso: str):
+def _sync_latest_to_smoothed(us_index_raw: float, ts_iso: str):
     """
-    Overwrite latest summary/full to use the smoothed US index so the header and chart match.
+    Update latest summary/full with the raw US index value (no smoothing applied to history anymore).
     If a dashboard JSON exists, update it too.
     """
     latest_summary = HCPI_DIR / "hcpi_latest_summary.json"
@@ -260,14 +365,14 @@ def _sync_latest_to_smoothed(us_index_smoothed: float, ts_iso: str):
             # Summary file has keys: us_index, timestamp, regional_indices, ...
             if isinstance(obj, dict):
                 if "us_index" in obj:
-                    obj["us_index"] = round(float(us_index_smoothed), 4) if us_index_smoothed is not None else None
-                # normalise timestamp to history's last ts (smoothed)
+                    obj["us_index"] = round(float(us_index_raw), 4) if us_index_raw is not None else None
+                # normalise timestamp to history's last ts
                 obj["timestamp"] = ts_iso
                 path.write_text(json.dumps(obj, indent=2))
         except Exception as e:
             print(f"warning: failed to patch {path.name}: {e}")
 
-    if us_index_smoothed is not None:
+    if us_index_raw is not None:
         _patch(latest_summary)
         _patch(latest_full)
         _patch(dash)
@@ -298,9 +403,21 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
     except Exception as e:
         print(f"raw csv save failed: {e}")
 
+    # NEW: Remove outliers before processing
+    if verbose:
+        print("\n" + "=" * 70)
+        print("STEP 1a: outlier detection & removal")
+        print("-" * 70 + "\n")
+    
+    df_clean = _remove_outliers(df_scraped, verbose=verbose)
+    
+    if df_clean.empty:
+        print("❌ All data removed as outliers - aborting")
+        return None, None
+
     # Optional ROI preview (non-blocking)
     try:
-        df_cost = calculate_total_cost(df_scraped, duration_hours=1)
+        df_cost = calculate_total_cost(df_clean, duration_hours=1)
         if "perf_score" not in df_cost.columns:
             df_cost["perf_score"] = 1.0
         if "utilisation" not in df_cost.columns:
@@ -316,13 +433,13 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         if verbose:
             print(f"roi step skipped: {e}")
 
-    # ── Index calc (using adapter; calculator unchanged)
+    # ── Index calc (using adapter; calculator unchanged) - NOW USING CLEAN DATA
     if verbose:
         print("\n" + "=" * 70)
         print("STEP 2: calculate HCPI")
         print("-" * 70 + "\n")
 
-    df_idx = _prepare_index_input(df_scraped)
+    df_idx = _prepare_index_input(df_clean)
     hcpi_result = calculate_hcpi(
         df_idx,
         verbose=verbose
@@ -330,22 +447,22 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
 
     # ── Write artifacts (raw from calculator; will be synced to smoothed later)
     try:
-        _write_latest_artifacts(df_scraped, hcpi_result, ts, verbose)
+        _write_latest_artifacts(df_clean, hcpi_result, ts, verbose)
     except Exception as e:
         print(f"artifact write failed: {e}")
 
-    # ── Append histories (providers + index) and SMOOTH history JSON
+    # ── Append histories (providers + index) - NO retroactive smoothing
     try:
         run_iso_ts = hcpi_result.get("metadata", {}).get("timestamp") or start_dt.isoformat()
-        _append_history_quotes(df_scraped, run_iso_ts)
-        us_index_smooth, ts_hist = _append_history_indices(hcpi_result)
-        # Force latest JSONs (and optional dashboard JSON) to match smoothed last value
-        _sync_latest_to_smoothed(us_index_smooth, ts_hist)
-        if verbose and us_index_smooth is not None:
-            print(f"Smoothed US index (window={SMOOTH_INDEX_WINDOW_HOURS}h): {us_index_smooth:.4f}")
+        _append_history_quotes(df_clean, run_iso_ts)
+        us_index_raw, ts_hist = _append_history_indices(hcpi_result)
+        # Sync latest JSONs to match the new data point
+        _sync_latest_to_smoothed(us_index_raw, ts_hist)
+        if verbose and us_index_raw is not None:
+            print(f"Added new data point - US index: {us_index_raw:.4f}")
     except Exception as e:
         import traceback
-        print(f"history append/smooth failed: {type(e).__name__}: {e}")
+        print(f"history append failed: {type(e).__name__}: {e}")
         traceback.print_exc()
         raise
 
@@ -362,7 +479,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         print("STEP 3: persist to DB")
         print("-" * 70 + "\n")
     try:
-        save_to_database(df_scraped, hcpi_result, database_url=database_url)
+        save_to_database(df_clean, hcpi_result, database_url=database_url)
     except Exception as e:
         print(f"db persistence failed: {e}")
 
@@ -371,7 +488,7 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
         print(f"\nDONE in {(end_dt - start_dt).total_seconds():.1f}s")
         print("=" * 70 + "\n")
 
-    return df_scraped, hcpi_result
+    return df_clean, hcpi_result
 
 # ──────────────────────────────────────────────────────────────────────────────
 def run_continuous(interval_seconds: int, database_url: str, verbose: bool = True):
@@ -419,7 +536,9 @@ def main():
     if verbose:
         print(f"DB URL: {database_url}")
         print(f"HISTORY_RETENTION_HOURS={HISTORY_RETENTION_HOURS}")
-        print(f"SMOOTH_INDEX_WINDOW_HOURS={SMOOTH_INDEX_WINDOW_HOURS}")
+        print(f"OUTLIER_IQR_MULTIPLIER={OUTLIER_IQR_MULTIPLIER}")
+        print(f"OUTLIER_PRICE_FLOOR=${OUTLIER_PRICE_FLOOR:.2f}")
+        print(f"OUTLIER_PRICE_CEILING=${OUTLIER_PRICE_CEILING:.2f}")
 
     if args.cron:
         sys.exit(run_scheduled_cron(database_url=database_url, verbose=verbose))
