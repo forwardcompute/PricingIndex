@@ -28,6 +28,8 @@ PUBLIC_DIR = Path("public")
 
 # Keep N hourly points in hcpi_history.json (0 = keep all). Default 1 year.
 HISTORY_RETENTION_HOURS = int(os.getenv("HISTORY_RETENTION_HOURS", "8760"))
+# Smoothing window for history (hours)
+SMOOTH_INDEX_WINDOW_HOURS = int(os.getenv("SMOOTH_INDEX_WINDOW_HOURS", "48"))
 
 # Outlier detection parameters
 OUTLIER_IQR_MULTIPLIER = float(os.getenv("OUTLIER_IQR_MULTIPLIER", "3.0"))  # 3.0 = aggressive, 1.5 = conservative
@@ -285,10 +287,16 @@ def _append_history_indices(hcpi_result: dict):
     Append index values to:
       - data/history/index_history.csv  (long CSV - RAW values)
       - hcpi/hcpi_history.csv           (site CSV - RAW values)
-      - hcpi/hcpi_history.json          (rolling JSON with retention - RAW values, no retroactive smoothing)
+      - hcpi/hcpi_history.json          (rolling JSON with retention and smoothing applied)
     
-    NEW BEHAVIOR: We do NOT smooth the entire history. History is append-only with raw values.
-    Returns (raw_us_index, timestamp_iso) for the new point only.
+    Process:
+    1. Append new raw value to CSVs
+    2. Load existing JSON history
+    3. Append new raw value
+    4. Apply centered rolling average smoothing to entire dataset
+    5. Save smoothed data back to JSON
+    
+    Returns (smoothed_us_index, timestamp_iso) for the new point.
     """
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     HCPI_DIR.mkdir(parents=True, exist_ok=True)
@@ -311,7 +319,7 @@ def _append_history_indices(hcpi_result: dict):
     hcpi_hist_csv = HCPI_DIR / "hcpi_history.csv"
     pd.DataFrame([row]).to_csv(hcpi_hist_csv, mode="a", header=not hcpi_hist_csv.exists(), index=False)
 
-    # (C) rolling JSON with retention (RAW values, no smoothing)
+    # (C) rolling JSON with retention and SMOOTHING
     hcpi_hist_json = HCPI_DIR / "hcpi_history.json"
     if hcpi_hist_json.exists():
         existing = json.loads(hcpi_hist_json.read_text())
@@ -321,7 +329,7 @@ def _append_history_indices(hcpi_result: dict):
     # Append new raw row
     existing.append(row)
 
-    # Convert to DataFrame for retention management only
+    # Convert to DataFrame for processing
     df = pd.DataFrame(existing)
     df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True, errors="coerce")
     df = df.dropna(subset=["timestamp"]).sort_values("timestamp")
@@ -331,8 +339,28 @@ def _append_history_indices(hcpi_result: dict):
         cutoff = datetime.now(timezone.utc) - pd.Timedelta(hours=HISTORY_RETENTION_HOURS)
         df = df[df["timestamp"] >= cutoff]
 
-    # Write back as list[dict] with ISO timestamps and rounded numerics (RAW, NO SMOOTHING)
+    # Apply smoothing to numeric columns (ONCE, with centered window)
     numeric_cols = ["us_index", "US-East", "US-Central", "US-West"]
+    
+    # Convert to numeric first
+    for col in numeric_cols:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+    
+    # Apply centered rolling average (48-hour window)
+    # NOTE: Using center=False so new data points update immediately
+    # center=True would require 24 hours of future data before updating
+    smooth_window = int(os.getenv("SMOOTH_INDEX_WINDOW_HOURS", "48"))
+    if smooth_window > 0:
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = df[col].rolling(
+                    window=smooth_window,
+                    min_periods=1,
+                    center=False  # Backward-looking so new data updates immediately
+                ).mean()
+
+    # Write back as list[dict] with ISO timestamps and rounded numerics (SMOOTHED)
     out_records = []
     for _, r in df.iterrows():
         rec = {"timestamp": r["timestamp"].strftime("%Y-%m-%dT%H:%M:%SZ")}
@@ -344,13 +372,13 @@ def _append_history_indices(hcpi_result: dict):
 
     hcpi_hist_json.write_text(json.dumps(out_records, indent=2))
 
-    # Return last RAW value and timestamp (no smoothing applied)
+    # Return last smoothed value and timestamp
     last = out_records[-1]
     return float(last.get("us_index")) if last.get("us_index") is not None else None, last["timestamp"]
 
-def _sync_latest_to_smoothed(us_index_raw: float, ts_iso: str):
+def _sync_latest_to_smoothed(us_index_smoothed: float, ts_iso: str):
     """
-    Update latest summary/full with the raw US index value (no smoothing applied to history anymore).
+    Update latest summary/full with the smoothed US index value.
     If a dashboard JSON exists, update it too.
     """
     latest_summary = HCPI_DIR / "hcpi_latest_summary.json"
@@ -365,14 +393,14 @@ def _sync_latest_to_smoothed(us_index_raw: float, ts_iso: str):
             # Summary file has keys: us_index, timestamp, regional_indices, ...
             if isinstance(obj, dict):
                 if "us_index" in obj:
-                    obj["us_index"] = round(float(us_index_raw), 4) if us_index_raw is not None else None
+                    obj["us_index"] = round(float(us_index_smoothed), 4) if us_index_smoothed is not None else None
                 # normalise timestamp to history's last ts
                 obj["timestamp"] = ts_iso
                 path.write_text(json.dumps(obj, indent=2))
         except Exception as e:
             print(f"warning: failed to patch {path.name}: {e}")
 
-    if us_index_raw is not None:
+    if us_index_smoothed is not None:
         _patch(latest_summary)
         _patch(latest_full)
         _patch(dash)
@@ -451,15 +479,15 @@ def run_single_scrape_and_calculate(database_url: str, verbose: bool = True):
     except Exception as e:
         print(f"artifact write failed: {e}")
 
-    # ── Append histories (providers + index) - NO retroactive smoothing
+    # ── Append histories (providers + index) with smoothing applied
     try:
         run_iso_ts = hcpi_result.get("metadata", {}).get("timestamp") or start_dt.isoformat()
         _append_history_quotes(df_clean, run_iso_ts)
-        us_index_raw, ts_hist = _append_history_indices(hcpi_result)
-        # Sync latest JSONs to match the new data point
-        _sync_latest_to_smoothed(us_index_raw, ts_hist)
-        if verbose and us_index_raw is not None:
-            print(f"Added new data point - US index: {us_index_raw:.4f}")
+        us_index_smoothed, ts_hist = _append_history_indices(hcpi_result)
+        # Sync latest JSONs to match the smoothed data point
+        _sync_latest_to_smoothed(us_index_smoothed, ts_hist)
+        if verbose and us_index_smoothed is not None:
+            print(f"Added new data point (smoothed) - US index: {us_index_smoothed:.4f}")
     except Exception as e:
         import traceback
         print(f"history append failed: {type(e).__name__}: {e}")
@@ -536,6 +564,7 @@ def main():
     if verbose:
         print(f"DB URL: {database_url}")
         print(f"HISTORY_RETENTION_HOURS={HISTORY_RETENTION_HOURS}")
+        print(f"SMOOTH_INDEX_WINDOW_HOURS={SMOOTH_INDEX_WINDOW_HOURS}")
         print(f"OUTLIER_IQR_MULTIPLIER={OUTLIER_IQR_MULTIPLIER}")
         print(f"OUTLIER_PRICE_FLOOR=${OUTLIER_PRICE_FLOOR:.2f}")
         print(f"OUTLIER_PRICE_CEILING=${OUTLIER_PRICE_CEILING:.2f}")
@@ -549,7 +578,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
 
