@@ -353,18 +353,33 @@ def _append_history_indices(hcpi_result: dict):
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors="coerce")
     
+    # CRITICAL: Filter outliers from CSV data before smoothing
+    # This prevents bad CSV values from pulling the smoothed value too high
+    df_clean = df.copy()
+    for col in numeric_cols:
+        if col in df_clean.columns and len(df_clean) >= 5:
+            Q1 = df_clean[col].quantile(0.25)
+            Q3 = df_clean[col].quantile(0.75)
+            IQR = Q3 - Q1
+            lower = Q1 - (3.0 * IQR)
+            upper = Q3 + (3.0 * IQR)
+            df_clean = df_clean[(df_clean[col] >= lower) & (df_clean[col] <= upper)]
+    
+    # Use cleaned data for smoothing
+    df = df_clean
+    
     # Calculate smoothed values (to get the smoothed value for the NEW point)
     smooth_window = int(os.getenv("SMOOTH_INDEX_WINDOW_HOURS", "48"))
     df_smoothed = df.copy()
     if smooth_window > 0:
         for col in numeric_cols:
             if col in df_smoothed.columns:
-                # Use center=True to match historical backfill data
-                # This gives balanced smoothing without lag bias
+                # Use center=False for backward-looking smoothing
+                # (with outlier filtering now, this won't spike)
                 df_smoothed[col] = df_smoothed[col].rolling(
                     window=smooth_window,
                     min_periods=1,
-                    center=True  # Centered - matches backfill
+                    center=False  # Backward-looking
                 ).mean()
 
     # Extract ONLY the smoothed value for the NEW point (last row)
