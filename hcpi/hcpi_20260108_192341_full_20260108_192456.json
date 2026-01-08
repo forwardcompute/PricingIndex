@@ -1,5 +1,5 @@
 {
-  "us_index": 3.7168,
+  "us_index": 3.2348,
   "regional_indices": {
     "US-West": 2.8218,
     "US-Central": 2.6015,
@@ -169,6 +169,5 @@
       "min": 0.5,
       "max": 20.0
     }
-  },
-  "timestamp": "2026-01-08T19:24:56.175322+00:00"
+  }
 }
