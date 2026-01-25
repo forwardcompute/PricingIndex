@@ -1,13 +1,13 @@
 {
-  "us_index": 3.5832,
+  "us_index": 3.6083,
   "regional_indices": {
     "US-West": 8.4088,
-    "US-Central": 2.6327,
+    "US-Central": 2.6193,
     "US-East": 6.7422
   },
   "regional_liquidities": {
     "US-West": 2.24,
-    "US-Central": 13.51,
+    "US-Central": 9.93,
     "US-East": 2.16
   },
   "regional_details": {
@@ -23,10 +23,10 @@
       }
     },
     "US-Central": {
-      "index": 2.6327,
-      "liquidity": 13.51,
+      "index": 2.6193,
+      "liquidity": 9.93,
       "num_providers": 9,
-      "total_gpus": 19,
+      "total_gpus": 16,
       "price_range": {
         "min": 1.3355555555555554,
         "max": 15.67,
@@ -66,19 +66,19 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.6904,
+      "category_index": 2.7001,
       "providers": [
         "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 11,
+      "total_gpus": 8,
       "regional_indices": {
-        "US-Central": 2.6904
+        "US-Central": 2.7001
       },
       "regional_liquidities": {
-        "US-Central": 11.14
+        "US-Central": 7.56
       }
     },
     "Serverless": {
@@ -122,7 +122,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-01-25T17:23:31.732815+00:00",
+    "timestamp": "2026-01-25T18:37:34.275986+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -139,7 +139,7 @@
     "total_listings": 20,
     "unique_providers": 16,
     "unique_providers_raw": 16,
-    "total_gpus": 28,
+    "total_gpus": 25,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -168,5 +168,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-01-25T17:23:31.732815+00:00"
+  "timestamp": "2026-01-25T18:37:34.275986+00:00"
 }
