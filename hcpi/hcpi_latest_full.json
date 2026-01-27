@@ -25,12 +25,12 @@
     "US-Central": {
       "index": 2.6336,
       "liquidity": 13.48,
-      "num_providers": 8,
-      "total_gpus": 18,
+      "num_providers": 9,
+      "total_gpus": 19,
       "price_range": {
         "min": 1.2688888888888887,
         "max": 15.67,
-        "median": 2.6405000000000003
+        "median": 2.69
       }
     },
     "US-East": {
@@ -73,7 +73,7 @@
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 11,
+      "total_gpus": 12,
       "regional_indices": {
         "US-West": 2.49,
         "US-Central": 2.6904
@@ -124,7 +124,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-01-27T11:28:58.073882+00:00",
+    "timestamp": "2026-01-27T13:01:17.517212+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -138,10 +138,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 20,
+    "total_listings": 21,
     "unique_providers": 16,
     "unique_providers_raw": 16,
-    "total_gpus": 28,
+    "total_gpus": 29,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -170,5 +170,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-01-27T11:28:58.073882+00:00"
+  "timestamp": "2026-01-27T13:01:17.517212+00:00"
 }
