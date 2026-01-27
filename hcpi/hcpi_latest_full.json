@@ -1,25 +1,25 @@
 {
   "us_index": 3.6527,
   "regional_indices": {
-    "US-West": 8.4088,
+    "US-West": 2.8218,
     "US-Central": 2.6336,
-    "US-East": 6.4577
+    "US-East": 6.8237
   },
   "regional_liquidities": {
-    "US-West": 2.24,
+    "US-West": 1.98,
     "US-Central": 13.48,
-    "US-East": 2.3
+    "US-East": 2.08
   },
   "regional_details": {
     "US-West": {
-      "index": 8.4088,
-      "liquidity": 2.24,
-      "num_providers": 5,
-      "total_gpus": 5,
+      "index": 2.8218,
+      "liquidity": 1.98,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 1.35,
         "max": 12.29,
-        "median": 3.36
+        "median": 2.925
       }
     },
     "US-Central": {
@@ -34,10 +34,10 @@
       }
     },
     "US-East": {
-      "index": 6.4577,
-      "liquidity": 2.3,
-      "num_providers": 7,
-      "total_gpus": 8,
+      "index": 6.8237,
+      "liquidity": 2.08,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 1.22,
         "max": 12.84,
@@ -66,7 +66,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7195,
+      "category_index": 2.6709,
       "providers": [
         "Lambda Labs",
         "Nebius",
@@ -75,12 +75,12 @@
       ],
       "total_gpus": 11,
       "regional_indices": {
-        "US-Central": 2.6904,
-        "US-East": 2.99
+        "US-West": 2.49,
+        "US-Central": 2.6904
       },
       "regional_liquidities": {
-        "US-Central": 11.14,
-        "US-East": 1.2
+        "US-West": 1.2,
+        "US-Central": 11.14
       }
     },
     "Serverless": {
@@ -124,7 +124,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-01-27T13:53:19.186686+00:00",
+    "timestamp": "2026-01-27T14:36:38.065492+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -170,5 +170,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-01-27T13:53:19.186686+00:00"
+  "timestamp": "2026-01-27T14:36:38.065492+00:00"
 }
