@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.4088,
-    "US-Central": 2.642,
+    "US-Central": 2.613,
     "US-East": 6.4577
   },
   "regional_liquidities": {
     "US-West": 2.24,
-    "US-Central": 10.98,
+    "US-Central": 9.88,
     "US-East": 2.3
   },
   "regional_details": {
@@ -23,12 +23,12 @@
       }
     },
     "US-Central": {
-      "index": 2.642,
-      "liquidity": 10.98,
+      "index": 2.613,
+      "liquidity": 9.88,
       "num_providers": 8,
       "total_gpus": 15,
       "price_range": {
-        "min": 1.602222222222222,
+        "min": 1.2688888888888887,
         "max": 15.67,
         "median": 2.6405000000000003
       }
@@ -66,20 +66,20 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7266,
+      "category_index": 2.7317,
       "providers": [
         "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 9,
+      "total_gpus": 8,
       "regional_indices": {
-        "US-Central": 2.6905,
+        "US-Central": 2.6906,
         "US-East": 2.99
       },
       "regional_liquidities": {
-        "US-Central": 8.74,
+        "US-Central": 7.54,
         "US-East": 1.2
       }
     },
@@ -100,7 +100,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5885,
+      "category_index": 1.4283,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -110,21 +110,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 7,
+      "total_gpus": 8,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 1.7509,
+        "US-Central": 1.3126,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 1.12,
-        "US-Central": 1.15,
+        "US-Central": 1.88,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-01-27T16:37:14.359502+00:00",
+    "timestamp": "2026-01-27T17:34:22.544042+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -170,5 +170,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-01-27T16:37:14.359502+00:00"
+  "timestamp": "2026-01-27T17:34:22.544042+00:00"
 }
