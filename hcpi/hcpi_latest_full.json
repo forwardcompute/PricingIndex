@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.4088,
-    "US-Central": 2.3093,
+    "US-Central": 2.326,
     "US-East": 6.8237
   },
   "regional_liquidities": {
     "US-West": 2.24,
-    "US-Central": 10.82,
+    "US-Central": 10.81,
     "US-East": 2.08
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.3093,
-      "liquidity": 10.82,
-      "num_providers": 8,
-      "total_gpus": 32,
+      "index": 2.326,
+      "liquidity": 10.81,
+      "num_providers": 9,
+      "total_gpus": 33,
       "price_range": {
-        "min": 0.5707625272331155,
+        "min": 0.5079302832244008,
         "max": 15.67,
-        "median": 2.6405000000000003
+        "median": 2.69
       }
     },
     "US-East": {
@@ -68,11 +68,12 @@
     "Major GPU Clouds": {
       "category_index": 2.6904,
       "providers": [
+        "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 10,
+      "total_gpus": 11,
       "regional_indices": {
         "US-Central": 2.6904
       },
@@ -97,7 +98,7 @@
       }
     },
     "Specialized": {
-      "category_index": 0.7045,
+      "category_index": 0.6505,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -110,7 +111,7 @@
       "total_gpus": 23,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 0.5708,
+        "US-Central": 0.5079,
         "US-East": 1.5465
       },
       "regional_liquidities": {
@@ -121,7 +122,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-01-30T21:34:27.665394+00:00",
+    "timestamp": "2026-01-30T22:32:53.893005+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -135,10 +136,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 19,
-    "unique_providers": 15,
+    "total_listings": 20,
+    "unique_providers": 16,
     "unique_providers_raw": 16,
-    "total_gpus": 42,
+    "total_gpus": 43,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -150,6 +151,7 @@
       "GCP",
       "Genesis Cloud",
       "Jarvislabs",
+      "Lambda Labs",
       "Nebius",
       "OVHcloud",
       "Paperspace",
@@ -166,5 +168,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-01-30T21:34:27.665394+00:00"
+  "timestamp": "2026-01-30T22:32:53.893005+00:00"
 }
