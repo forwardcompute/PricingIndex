@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.4088,
-    "US-Central": 2.3059,
+    "US-Central": 2.3004,
     "US-East": 6.8237
   },
   "regional_liquidities": {
     "US-West": 2.24,
-    "US-Central": 10.86,
+    "US-Central": 10.93,
     "US-East": 2.08
   },
   "regional_details": {
@@ -23,12 +23,12 @@
       }
     },
     "US-Central": {
-      "index": 2.3059,
-      "liquidity": 10.86,
+      "index": 2.3004,
+      "liquidity": 10.93,
       "num_providers": 8,
       "total_gpus": 32,
       "price_range": {
-        "min": 0.5888801742919391,
+        "min": 0.6179520697167756,
         "max": 15.67,
         "median": 2.6405000000000003
       }
@@ -97,7 +97,7 @@
       }
     },
     "Specialized": {
-      "category_index": 0.72,
+      "category_index": 0.745,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -110,7 +110,7 @@
       "total_gpus": 23,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 0.5889,
+        "US-Central": 0.618,
         "US-East": 1.5465
       },
       "regional_liquidities": {
@@ -121,7 +121,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-02-01T05:06:33.367659+00:00",
+    "timestamp": "2026-02-01T06:06:22.368294+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -166,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-02-01T05:06:33.367659+00:00"
+  "timestamp": "2026-02-01T06:06:22.368294+00:00"
 }
