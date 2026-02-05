@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 2.8218,
-    "US-Central": 2.6359,
+    "US-Central": 2.5882,
     "US-East": 6.8237
   },
   "regional_liquidities": {
     "US-West": 1.98,
-    "US-Central": 13.69,
+    "US-Central": 14.05,
     "US-East": 2.08
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.6359,
-      "liquidity": 13.69,
-      "num_providers": 8,
-      "total_gpus": 19,
+      "index": 2.5882,
+      "liquidity": 14.05,
+      "num_providers": 9,
+      "total_gpus": 23,
       "price_range": {
-        "min": 1.446395061728395,
+        "min": 1.2012098765432098,
         "max": 15.67,
-        "median": 2.77005
+        "median": 2.8501
       }
     },
     "US-East": {
@@ -73,7 +73,7 @@
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 11,
+      "total_gpus": 12,
       "regional_indices": {
         "US-West": 2.49,
         "US-Central": 2.6904
@@ -100,7 +100,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5029,
+      "category_index": 1.3084,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -110,21 +110,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 9,
+      "total_gpus": 12,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 1.4926,
+        "US-Central": 1.213,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 1.12,
-        "US-Central": 2.86,
+        "US-Central": 5.46,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-02-05T07:57:15.149212+00:00",
+    "timestamp": "2026-02-05T08:53:23.948301+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -138,10 +138,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 20,
+    "total_listings": 21,
     "unique_providers": 16,
     "unique_providers_raw": 16,
-    "total_gpus": 29,
+    "total_gpus": 33,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -170,5 +170,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-02-05T07:57:15.149212+00:00"
+  "timestamp": "2026-02-05T08:53:23.948301+00:00"
 }
