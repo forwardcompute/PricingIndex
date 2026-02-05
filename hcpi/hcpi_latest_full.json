@@ -2,13 +2,13 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.4088,
-    "US-Central": 2.6084,
-    "US-East": 6.8237
+    "US-Central": 2.6301,
+    "US-East": 6.4577
   },
   "regional_liquidities": {
     "US-West": 2.24,
-    "US-Central": 13.8,
-    "US-East": 2.08
+    "US-Central": 13.55,
+    "US-East": 2.3
   },
   "regional_details": {
     "US-West": {
@@ -23,21 +23,21 @@
       }
     },
     "US-Central": {
-      "index": 2.6084,
-      "liquidity": 13.8,
-      "num_providers": 9,
-      "total_gpus": 22,
+      "index": 2.6301,
+      "liquidity": 13.55,
+      "num_providers": 8,
+      "total_gpus": 20,
       "price_range": {
-        "min": 1.114814814814815,
+        "min": 0.9694444444444444,
         "max": 15.67,
-        "median": 2.8501
+        "median": 2.77005
       }
     },
     "US-East": {
-      "index": 6.8237,
-      "liquidity": 2.08,
-      "num_providers": 6,
-      "total_gpus": 7,
+      "index": 6.4577,
+      "liquidity": 2.3,
+      "num_providers": 7,
+      "total_gpus": 8,
       "price_range": {
         "min": 1.22,
         "max": 12.84,
@@ -66,7 +66,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.6904,
+      "category_index": 2.7195,
       "providers": [
         "Lambda Labs",
         "Nebius",
@@ -75,10 +75,12 @@
       ],
       "total_gpus": 11,
       "regional_indices": {
-        "US-Central": 2.6904
+        "US-Central": 2.6904,
+        "US-East": 2.99
       },
       "regional_liquidities": {
-        "US-Central": 11.14
+        "US-Central": 11.14,
+        "US-East": 1.2
       }
     },
     "Serverless": {
@@ -98,7 +100,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.2641,
+      "category_index": 1.1969,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -108,21 +110,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 11,
+      "total_gpus": 10,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 1.1247,
+        "US-Central": 0.975,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 1.12,
-        "US-Central": 4.54,
+        "US-Central": 3.62,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-02-05T15:47:10.127057+00:00",
+    "timestamp": "2026-02-05T16:58:11.870947+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -139,7 +141,7 @@
     "total_listings": 20,
     "unique_providers": 16,
     "unique_providers_raw": 16,
-    "total_gpus": 31,
+    "total_gpus": 30,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -168,5 +170,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-02-05T15:47:10.127057+00:00"
+  "timestamp": "2026-02-05T16:58:11.870947+00:00"
 }
