@@ -1,0 +1,171 @@
+{
+  "us_index": 2.9771,
+  "regional_indices": {
+    "US-West": 2.9421,
+    "US-Central": 2.461,
+    "US-East": 6.8237
+  },
+  "regional_liquidities": {
+    "US-West": 1.83,
+    "US-Central": 15.41,
+    "US-East": 2.08
+  },
+  "regional_details": {
+    "US-West": {
+      "index": 2.9421,
+      "liquidity": 1.83,
+      "num_providers": 5,
+      "total_gpus": 6,
+      "price_range": {
+        "min": 1.99,
+        "max": 12.29,
+        "median": 3.36
+      }
+    },
+    "US-Central": {
+      "index": 2.461,
+      "liquidity": 15.41,
+      "num_providers": 9,
+      "total_gpus": 31,
+      "price_range": {
+        "min": 1.1313530864197532,
+        "max": 15.67,
+        "median": 2.8501
+      }
+    },
+    "US-East": {
+      "index": 6.8237,
+      "liquidity": 2.08,
+      "num_providers": 6,
+      "total_gpus": 7,
+      "price_range": {
+        "min": 1.22,
+        "max": 12.84,
+        "median": 4.9350000000000005
+      }
+    }
+  },
+  "category_indices": {
+    "Big 3 Hyperscalers": {
+      "category_index": 9.0996,
+      "providers": [
+        "AWS",
+        "Azure",
+        "GCP"
+      ],
+      "total_gpus": 7,
+      "regional_indices": {
+        "US-West": 9.3982,
+        "US-Central": 2.8501,
+        "US-East": 11.8401
+      },
+      "regional_liquidities": {
+        "US-West": 1.91,
+        "US-Central": 1.5,
+        "US-East": 3.21
+      }
+    },
+    "Major GPU Clouds": {
+      "category_index": 2.6768,
+      "providers": [
+        "Lambda Labs",
+        "Nebius",
+        "Paperspace",
+        "RunPod"
+      ],
+      "total_gpus": 12,
+      "regional_indices": {
+        "US-West": 2.49,
+        "US-Central": 2.6969
+      },
+      "regional_liquidities": {
+        "US-West": 1.2,
+        "US-Central": 11.16
+      }
+    },
+    "Serverless": {
+      "category_index": 4.425,
+      "providers": [
+        "Replicate",
+        "Together.ai"
+      ],
+      "total_gpus": 2,
+      "regional_indices": {
+        "US-West": 3.36,
+        "US-Central": 5.49
+      },
+      "regional_liquidities": {
+        "US-West": 1.0,
+        "US-Central": 1.0
+      }
+    },
+    "Specialized": {
+      "category_index": 1.22,
+      "providers": [
+        "Genesis Cloud",
+        "Jarvislabs",
+        "OVHcloud",
+        "Scaleway",
+        "Vast.ai",
+        "Voltage Park"
+      ],
+      "total_gpus": 20,
+      "regional_indices": {
+        "US-West": 1.99,
+        "US-Central": 1.1349,
+        "US-East": 1.5465
+      },
+      "regional_liquidities": {
+        "US-West": 0.9,
+        "US-Central": 13.54,
+        "US-East": 1.41
+      }
+    }
+  },
+  "metadata": {
+    "timestamp": "2026-02-09T11:51:00.071628+00:00",
+    "lambda": 3.0,
+    "methodology": "ORNN",
+    "market_weighted": true,
+    "smoothing_applied": true,
+    "smoothing_window_hours": 24,
+    "forward_fill_limit": 48,
+    "provider_weights": {
+      "Big 3 Hyperscalers": 1.5,
+      "Major GPU Clouds": 1.2,
+      "Serverless": 1.0,
+      "Specialized": 0.9,
+      "Other": 0.8
+    },
+    "total_listings": 20,
+    "unique_providers": 15,
+    "unique_providers_raw": 15,
+    "total_gpus": 41,
+    "regions_covered": [
+      "US-West",
+      "US-Central",
+      "US-East"
+    ],
+    "provider_list": [
+      "AWS",
+      "Azure",
+      "GCP",
+      "Genesis Cloud",
+      "Jarvislabs",
+      "Lambda Labs",
+      "Nebius",
+      "OVHcloud",
+      "Paperspace",
+      "Replicate",
+      "RunPod",
+      "Scaleway",
+      "Together.ai",
+      "Vast.ai",
+      "Voltage Park"
+    ],
+    "price_bounds_applied": {
+      "min": 0.5,
+      "max": 20.0
+    }
+  }
+}
