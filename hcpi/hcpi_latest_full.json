@@ -3,12 +3,12 @@
   "regional_indices": {
     "US-West": 8.4088,
     "US-Central": 2.6147,
-    "US-East": 6.4577
+    "US-East": 6.8237
   },
   "regional_liquidities": {
     "US-West": 2.24,
     "US-Central": 13.67,
-    "US-East": 2.3
+    "US-East": 2.08
   },
   "regional_details": {
     "US-West": {
@@ -34,10 +34,10 @@
       }
     },
     "US-East": {
-      "index": 6.4577,
-      "liquidity": 2.3,
-      "num_providers": 7,
-      "total_gpus": 8,
+      "index": 6.8237,
+      "liquidity": 2.08,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 1.22,
         "max": 12.84,
@@ -66,21 +66,18 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7195,
+      "category_index": 2.6904,
       "providers": [
-        "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 11,
+      "total_gpus": 10,
       "regional_indices": {
-        "US-Central": 2.6904,
-        "US-East": 2.99
+        "US-Central": 2.6904
       },
       "regional_liquidities": {
-        "US-Central": 11.14,
-        "US-East": 1.2
+        "US-Central": 11.14
       }
     },
     "Serverless": {
@@ -124,7 +121,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-02-11T23:17:58.344626+00:00",
+    "timestamp": "2026-02-12T00:51:13.903880+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -138,10 +135,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 20,
-    "unique_providers": 16,
+    "total_listings": 19,
+    "unique_providers": 15,
     "unique_providers_raw": 16,
-    "total_gpus": 31,
+    "total_gpus": 30,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -153,7 +150,6 @@
       "GCP",
       "Genesis Cloud",
       "Jarvislabs",
-      "Lambda Labs",
       "Nebius",
       "OVHcloud",
       "Paperspace",
@@ -170,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-02-11T23:17:58.344626+00:00"
+  "timestamp": "2026-02-12T00:51:13.903880+00:00"
 }
