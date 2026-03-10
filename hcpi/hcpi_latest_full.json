@@ -28,7 +28,7 @@
       "num_providers": 7,
       "total_gpus": 17,
       "price_range": {
-        "min": 1.5822222222222222,
+        "min": 1.5825925925925928,
         "max": 15.67,
         "median": 2.69
       }
@@ -99,7 +99,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5813,
+      "category_index": 1.5814,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -112,7 +112,7 @@
       "total_gpus": 8,
       "regional_indices": {
         "US-West": 1.4744,
-        "US-Central": 1.664,
+        "US-Central": 1.6644,
         "US-East": 1.5465
       },
       "regional_liquidities": {
@@ -123,7 +123,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-03-09T23:15:02.665334+00:00",
+    "timestamp": "2026-03-10T00:46:51.736639+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -168,5 +168,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-03-09T23:15:02.665334+00:00"
+  "timestamp": "2026-03-10T00:46:51.736639+00:00"
 }
