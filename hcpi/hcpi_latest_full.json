@@ -1,34 +1,34 @@
 {
   "us_index": 3.6527,
   "regional_indices": {
-    "US-West": 8.3363,
-    "US-Central": 2.6144,
+    "US-West": 8.5504,
+    "US-Central": 2.6291,
     "US-East": 6.4386
   },
   "regional_liquidities": {
-    "US-West": 2.41,
-    "US-Central": 12.43,
+    "US-West": 2.34,
+    "US-Central": 11.05,
     "US-East": 2.35
   },
   "regional_details": {
     "US-West": {
-      "index": 8.3363,
-      "liquidity": 2.41,
-      "num_providers": 5,
-      "total_gpus": 5,
+      "index": 8.5504,
+      "liquidity": 2.34,
+      "num_providers": 4,
+      "total_gpus": 4,
       "price_range": {
-        "min": 1.35,
+        "min": 1.99,
         "max": 12.29,
-        "median": 5.49
+        "median": 7.045
       }
     },
     "US-Central": {
-      "index": 2.6144,
-      "liquidity": 12.43,
+      "index": 2.6291,
+      "liquidity": 11.05,
       "num_providers": 7,
-      "total_gpus": 18,
+      "total_gpus": 16,
       "price_range": {
-        "min": 1.4386666666666665,
+        "min": 1.5125925925925927,
         "max": 15.67,
         "median": 2.69
       }
@@ -65,20 +65,20 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7633,
+      "category_index": 2.7711,
       "providers": [
         "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 11,
+      "total_gpus": 10,
       "regional_indices": {
         "US-Central": 2.6904,
         "US-East": 3.44
       },
       "regional_liquidities": {
-        "US-Central": 11.14,
+        "US-Central": 9.94,
         "US-East": 1.2
       }
     },
@@ -99,31 +99,30 @@
       }
     },
     "Specialized": {
-      "category_index": 1.4984,
+      "category_index": 1.6584,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
         "OVHcloud",
-        "SF Compute",
         "Scaleway",
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 9,
+      "total_gpus": 7,
       "regional_indices": {
-        "US-West": 1.4744,
-        "US-Central": 1.4842,
+        "US-West": 1.99,
+        "US-Central": 1.5877,
         "US-East": 1.5465
       },
       "regional_liquidities": {
-        "US-West": 1.12,
-        "US-Central": 2.85,
+        "US-West": 0.9,
+        "US-Central": 1.99,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-03-12T10:23:41.981466+00:00",
+    "timestamp": "2026-03-12T11:20:08.739846+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -137,10 +136,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 19,
-    "unique_providers": 15,
-    "unique_providers_raw": 15,
-    "total_gpus": 28,
+    "total_listings": 18,
+    "unique_providers": 14,
+    "unique_providers_raw": 14,
+    "total_gpus": 25,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -157,7 +156,6 @@
       "Paperspace",
       "Replicate",
       "RunPod",
-      "SF Compute",
       "Scaleway",
       "Together.ai",
       "Vast.ai",
@@ -168,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-03-12T10:23:41.981466+00:00"
+  "timestamp": "2026-03-12T11:20:08.739846+00:00"
 }
