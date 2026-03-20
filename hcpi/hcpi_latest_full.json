@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.5504,
-    "US-Central": 2.5458,
+    "US-Central": 2.5837,
     "US-East": 6.4386
   },
   "regional_liquidities": {
     "US-West": 2.34,
-    "US-Central": 10.55,
+    "US-Central": 11.45,
     "US-East": 2.35
   },
   "regional_details": {
@@ -23,12 +23,12 @@
       }
     },
     "US-Central": {
-      "index": 2.5458,
-      "liquidity": 10.55,
+      "index": 2.5837,
+      "liquidity": 11.45,
       "num_providers": 7,
       "total_gpus": 17,
       "price_range": {
-        "min": 1.4968,
+        "min": 1.4346666666666665,
         "max": 15.67,
         "median": 2.69
       }
@@ -65,20 +65,20 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7809,
+      "category_index": 2.7711,
       "providers": [
         "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 9,
+      "total_gpus": 10,
       "regional_indices": {
-        "US-Central": 2.6905,
+        "US-Central": 2.6904,
         "US-East": 3.44
       },
       "regional_liquidities": {
-        "US-Central": 8.74,
+        "US-Central": 9.94,
         "US-East": 1.2
       }
     },
@@ -99,7 +99,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5911,
+      "category_index": 1.5644,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -108,21 +108,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 10,
+      "total_gpus": 9,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.5279,
+        "US-Central": 1.469,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 4.68,
+        "US-Central": 3.75,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-03-20T20:17:00.304261+00:00",
+    "timestamp": "2026-03-20T21:16:02.220527+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -166,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-03-20T20:17:00.304261+00:00"
+  "timestamp": "2026-03-20T21:16:02.220527+00:00"
 }
