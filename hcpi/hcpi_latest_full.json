@@ -2,12 +2,12 @@
   "us_index": 3.6527,
   "regional_indices": {
     "US-West": 8.5504,
-    "US-Central": 2.649,
+    "US-Central": 2.6573,
     "US-East": 6.426
   },
   "regional_liquidities": {
     "US-West": 2.34,
-    "US-Central": 9.73,
+    "US-Central": 12.03,
     "US-East": 2.42
   },
   "regional_details": {
@@ -23,12 +23,12 @@
       }
     },
     "US-Central": {
-      "index": 2.649,
-      "liquidity": 9.73,
+      "index": 2.6573,
+      "liquidity": 12.03,
       "num_providers": 7,
-      "total_gpus": 13,
+      "total_gpus": 16,
       "price_range": {
-        "min": 1.8688888888888886,
+        "min": 1.602222222222222,
         "max": 15.67,
         "median": 2.69
       }
@@ -65,20 +65,20 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.8473,
+      "category_index": 2.8167,
       "providers": [
         "Lambda Labs",
         "Nebius",
         "Paperspace",
         "RunPod"
       ],
-      "total_gpus": 9,
+      "total_gpus": 11,
       "regional_indices": {
-        "US-Central": 2.6905,
+        "US-Central": 2.6904,
         "US-East": 3.99
       },
       "regional_liquidities": {
-        "US-Central": 8.74,
+        "US-Central": 11.14,
         "US-East": 1.2
       }
     },
@@ -99,7 +99,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.8274,
+      "category_index": 1.7299,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -111,18 +111,18 @@
       "total_gpus": 6,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 2.0109,
+        "US-Central": 1.7509,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.36,
+        "US-Central": 1.15,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-03-27T18:29:44.032547+00:00",
+    "timestamp": "2026-03-27T19:24:11.476206+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -139,7 +139,7 @@
     "total_listings": 18,
     "unique_providers": 14,
     "unique_providers_raw": 14,
-    "total_gpus": 23,
+    "total_gpus": 25,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -166,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-03-27T18:29:44.032547+00:00"
+  "timestamp": "2026-03-27T19:24:11.476206+00:00"
 }
