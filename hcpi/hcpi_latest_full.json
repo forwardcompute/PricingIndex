@@ -1,25 +1,25 @@
 {
   "us_index": 3.6527,
   "regional_indices": {
-    "US-West": 5.4239,
+    "US-West": 8.5504,
     "US-Central": 2.6577,
-    "US-East": 6.8237
+    "US-East": 6.426
   },
   "regional_liquidities": {
-    "US-West": 1.73,
+    "US-West": 2.34,
     "US-Central": 12.01,
-    "US-East": 2.08
+    "US-East": 2.42
   },
   "regional_details": {
     "US-West": {
-      "index": 5.4239,
-      "liquidity": 1.73,
-      "num_providers": 5,
-      "total_gpus": 6,
+      "index": 8.5504,
+      "liquidity": 2.34,
+      "num_providers": 4,
+      "total_gpus": 4,
       "price_range": {
         "min": 1.99,
         "max": 12.29,
-        "median": 5.49
+        "median": 7.045
       }
     },
     "US-Central": {
@@ -28,20 +28,20 @@
       "num_providers": 7,
       "total_gpus": 16,
       "price_range": {
-        "min": 1.514222222222222,
+        "min": 1.5182222222222221,
         "max": 15.67,
         "median": 2.69
       }
     },
     "US-East": {
-      "index": 6.8237,
-      "liquidity": 2.08,
-      "num_providers": 6,
-      "total_gpus": 7,
+      "index": 6.426,
+      "liquidity": 2.42,
+      "num_providers": 7,
+      "total_gpus": 8,
       "price_range": {
         "min": 1.22,
         "max": 12.84,
-        "median": 4.9350000000000005
+        "median": 3.99
       }
     }
   },
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 2.7069,
+      "category_index": 2.8167,
       "providers": [
         "Lambda Labs",
         "Nebius",
@@ -74,12 +74,12 @@
       ],
       "total_gpus": 11,
       "regional_indices": {
-        "US-West": 2.86,
-        "US-Central": 2.6904
+        "US-Central": 2.6904,
+        "US-East": 3.99
       },
       "regional_liquidities": {
-        "US-West": 1.2,
-        "US-Central": 11.14
+        "US-Central": 11.14,
+        "US-East": 1.2
       }
     },
     "Serverless": {
@@ -99,7 +99,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.6976,
+      "category_index": 1.6991,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -111,18 +111,18 @@
       "total_gpus": 6,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.6515,
+        "US-Central": 1.6562,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.09,
+        "US-Central": 1.1,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-03-27T21:19:15.627477+00:00",
+    "timestamp": "2026-03-27T22:15:59.212603+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -166,5 +166,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-03-27T21:19:15.627477+00:00"
+  "timestamp": "2026-03-27T22:15:59.212603+00:00"
 }
