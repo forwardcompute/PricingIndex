@@ -2,13 +2,13 @@
   "us_index": 4.057,
   "regional_indices": {
     "US-West": 8.5504,
-    "US-Central": 1.522,
-    "US-East": 6.6272
+    "US-Central": 1.5222,
+    "US-East": 6.8237
   },
   "regional_liquidities": {
     "US-West": 2.34,
     "US-Central": 7.43,
-    "US-East": 2.96
+    "US-East": 2.08
   },
   "regional_details": {
     "US-West": {
@@ -23,25 +23,25 @@
       }
     },
     "US-Central": {
-      "index": 1.522,
+      "index": 1.5222,
       "liquidity": 7.43,
-      "num_providers": 5,
-      "total_gpus": 11,
+      "num_providers": 6,
+      "total_gpus": 12,
       "price_range": {
-        "min": 1.492,
+        "min": 1.4921666666666666,
         "max": 15.67,
-        "median": 3.09
+        "median": 4.29
       }
     },
     "US-East": {
-      "index": 6.6272,
-      "liquidity": 2.96,
-      "num_providers": 7,
-      "total_gpus": 8,
+      "index": 6.8237,
+      "liquidity": 2.08,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 1.22,
         "max": 12.84,
-        "median": 6.16
+        "median": 4.9350000000000005
       }
     }
   },
@@ -65,19 +65,17 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 4.625,
+      "category_index": 3.1209,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-Central": 3.09,
-        "US-East": 6.16
+        "US-Central": 3.1209
       },
       "regional_liquidities": {
-        "US-Central": 1.2,
-        "US-East": 1.2
+        "US-Central": 1.21
       }
     },
     "Serverless": {
@@ -97,7 +95,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5611,
+      "category_index": 1.5612,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -109,7 +107,7 @@
       "total_gpus": 13,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.5116,
+        "US-Central": 1.5117,
         "US-East": 1.5465
       },
       "regional_liquidities": {
@@ -120,7 +118,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-04-11T08:23:45.424379+00:00",
+    "timestamp": "2026-04-11T09:23:41.206635+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -162,5 +160,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-04-11T08:23:45.424379+00:00"
+  "timestamp": "2026-04-11T09:23:41.206635+00:00"
 }
