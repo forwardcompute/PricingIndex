@@ -7,7 +7,7 @@
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 14.61,
+    "US-Central": 15.52,
     "US-East": 2.08
   },
   "regional_details": {
@@ -24,13 +24,13 @@
     },
     "US-Central": {
       "index": 1.4844,
-      "liquidity": 14.61,
+      "liquidity": 15.52,
       "num_providers": 7,
-      "total_gpus": 21,
+      "total_gpus": 22,
       "price_range": {
-        "min": 1.4699444444444445,
+        "min": 1.4700392156862747,
         "max": 15.67,
-        "median": 4.29
+        "median": 3.69
       }
     },
     "US-East": {
@@ -65,17 +65,17 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.1209,
+      "category_index": 3.3753,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-Central": 3.1209
+        "US-Central": 3.3753
       },
       "regional_liquidities": {
-        "US-Central": 1.21
+        "US-Central": 1.57
       }
     },
     "Serverless": {
@@ -93,7 +93,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5123,
+      "category_index": 1.5102,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
@@ -102,21 +102,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 21,
+      "total_gpus": 22,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.4794,
+        "US-Central": 1.479,
         "US-East": 1.5465
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 14.57,
+        "US-Central": 15.47,
         "US-East": 1.41
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-05-01T14:34:42.385562+00:00",
+    "timestamp": "2026-05-01T15:30:20.534459+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -133,7 +133,7 @@
     "total_listings": 16,
     "unique_providers": 12,
     "unique_providers_raw": 12,
-    "total_gpus": 31,
+    "total_gpus": 32,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -158,5 +158,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-05-01T14:34:42.385562+00:00"
+  "timestamp": "2026-05-01T15:30:20.534459+00:00"
 }
