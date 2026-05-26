@@ -28,7 +28,7 @@
       "num_providers": 6,
       "total_gpus": 21,
       "price_range": {
-        "min": 1.4701481481481482,
+        "min": 1.4701481481481484,
         "max": 15.67,
         "median": 4.29
       }
@@ -118,7 +118,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-05-26T03:23:03.359624+00:00",
+    "timestamp": "2026-05-26T05:33:27.708134+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -160,5 +160,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-05-26T03:23:03.359624+00:00"
+  "timestamp": "2026-05-26T05:33:27.708134+00:00"
 }
