@@ -29,7 +29,7 @@
       "total_gpus": 23,
       "price_range": {
         "min": 1.5028460038986355,
-        "max": 16.36,
+        "max": 15.67,
         "median": 5.49
       }
     },
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.19,
+      "category_index": 3.2052,
       "providers": [
         "Lambda Labs",
         "Paperspace"
@@ -73,11 +73,11 @@
       "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.09
+        "US-Central": 3.1209
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.2
+        "US-Central": 1.21
       }
     },
     "Serverless": {
@@ -118,7 +118,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-05-30T11:38:18.052393+00:00",
+    "timestamp": "2026-05-30T12:40:28.321822+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -160,5 +160,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-05-30T11:38:18.052393+00:00"
+  "timestamp": "2026-05-30T12:40:28.321822+00:00"
 }
