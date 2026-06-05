@@ -1,13 +1,13 @@
 {
-  "us_index": 5.6794,
+  "us_index": 5.6785,
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 2.7201,
+    "US-Central": 6.1441,
     "US-East": 6.8459
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 2.45,
+    "US-Central": 2.53,
     "US-East": 2.07
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.7201,
-      "liquidity": 2.45,
-      "num_providers": 7,
-      "total_gpus": 9,
+      "index": 6.1441,
+      "liquidity": 2.53,
+      "num_providers": 6,
+      "total_gpus": 6,
       "price_range": {
-        "min": 1.692098765432099,
+        "min": 2.29,
         "max": 15.67,
-        "median": 5.49
+        "median": 5.99
       }
     },
     "US-East": {
@@ -93,30 +93,29 @@
       }
     },
     "Specialized": {
-      "category_index": 1.7473,
+      "category_index": 1.9053,
       "providers": [
         "Genesis Cloud",
         "Jarvislabs",
         "OVHcloud",
         "Scaleway",
-        "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 8,
+      "total_gpus": 5,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.754,
+        "US-Central": 2.29,
         "US-East": 1.5422
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 3.01,
+        "US-Central": 0.9,
         "US-East": 1.16
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-06-05T11:16:58.878736+00:00",
+    "timestamp": "2026-06-05T13:21:03.687980+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -130,10 +129,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 16,
-    "unique_providers": 12,
-    "unique_providers_raw": 12,
-    "total_gpus": 18,
+    "total_listings": 15,
+    "unique_providers": 11,
+    "unique_providers_raw": 11,
+    "total_gpus": 15,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -150,7 +149,6 @@
       "Replicate",
       "Scaleway",
       "Together.ai",
-      "Vast.ai",
       "Voltage Park"
     ],
     "price_bounds_applied": {
@@ -158,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-06-05T11:16:58.878736+00:00"
+  "timestamp": "2026-06-05T13:21:03.687980+00:00"
 }
