@@ -2,12 +2,12 @@
   "us_index": 4.9307,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 5.6584,
+    "US-Central": 6.1441,
     "US-East": 6.8459
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 2.04,
+    "US-Central": 2.53,
     "US-East": 2.07
   },
   "regional_details": {
@@ -23,13 +23,13 @@
       }
     },
     "US-Central": {
-      "index": 5.6584,
-      "liquidity": 2.04,
+      "index": 6.1441,
+      "liquidity": 2.53,
       "num_providers": 6,
       "total_gpus": 6,
       "price_range": {
         "min": 2.29,
-        "max": 16.36,
+        "max": 15.67,
         "median": 5.99
       }
     },
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.19,
+      "category_index": 3.2052,
       "providers": [
         "Lambda Labs",
         "Paperspace"
@@ -73,11 +73,11 @@
       "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.09
+        "US-Central": 3.1209
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.2
+        "US-Central": 1.21
       }
     },
     "Serverless": {
@@ -117,7 +117,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-06-14T01:25:40.198303+00:00",
+    "timestamp": "2026-06-14T03:24:29.527043+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -158,5 +158,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-06-14T01:25:40.198303+00:00"
+  "timestamp": "2026-06-14T03:24:29.527043+00:00"
 }
