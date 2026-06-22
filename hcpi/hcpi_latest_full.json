@@ -1,13 +1,13 @@
 {
-  "us_index": 4.7009,
+  "us_index": 4.6529,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 1.9618,
+    "US-Central": 2.035,
     "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 13.34,
+    "US-Central": 13.43,
     "US-East": 1.98
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 1.9618,
-      "liquidity": 13.34,
+      "index": 2.035,
+      "liquidity": 13.43,
       "num_providers": 7,
       "total_gpus": 19,
       "price_range": {
-        "min": 1.9241798941798944,
-        "max": 15.67,
-        "median": 4.29
+        "min": 2.0015978835978836,
+        "max": 16.36,
+        "median": 5.49
       }
     },
     "US-East": {
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.3384,
+      "category_index": 3.19,
       "providers": [
         "Lambda Labs",
         "Paperspace"
@@ -73,11 +73,11 @@
       "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.3753
+        "US-Central": 3.09
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.57
+        "US-Central": 1.2
       }
     },
     "Serverless": {
@@ -95,7 +95,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.8722,
+      "category_index": 1.9394,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -106,18 +106,18 @@
       "total_gpus": 18,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.9384,
+        "US-Central": 2.0144,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 13.11,
+        "US-Central": 13.18,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-06-22T03:26:00.077881+00:00",
+    "timestamp": "2026-06-22T06:04:48.482520+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -158,5 +158,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-06-22T03:26:00.077881+00:00"
+  "timestamp": "2026-06-22T06:04:48.482520+00:00"
 }
