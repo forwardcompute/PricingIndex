@@ -1,13 +1,13 @@
 {
-  "us_index": 5.2585,
+  "us_index": 5.2353,
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 2.6674,
+    "US-Central": 2.1754,
     "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 2.25,
+    "US-Central": 7.31,
     "US-East": 1.98
   },
   "regional_details": {
@@ -23,13 +23,13 @@
       }
     },
     "US-Central": {
-      "index": 2.6674,
-      "liquidity": 2.25,
+      "index": 2.1754,
+      "liquidity": 7.31,
       "num_providers": 6,
-      "total_gpus": 8,
+      "total_gpus": 12,
       "price_range": {
-        "min": 1.423456790123457,
-        "max": 15.67,
+        "min": 2.1146455026455024,
+        "max": 16.36,
         "median": 4.29
       }
     },
@@ -65,17 +65,17 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.1209,
+      "category_index": 3.09,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-Central": 3.1209
+        "US-Central": 3.09
       },
       "regional_liquidities": {
-        "US-Central": 1.21
+        "US-Central": 1.2
       }
     },
     "Serverless": {
@@ -92,7 +92,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.4376,
+      "category_index": 1.9805,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -100,21 +100,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 7,
+      "total_gpus": 11,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.4676,
+        "US-Central": 2.1322,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 2.84,
+        "US-Central": 7.0,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-07-10T13:45:59.783216+00:00",
+    "timestamp": "2026-07-10T15:02:18.019572+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -131,7 +131,7 @@
     "total_listings": 14,
     "unique_providers": 10,
     "unique_providers_raw": 10,
-    "total_gpus": 16,
+    "total_gpus": 20,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -154,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-07-10T13:45:59.783216+00:00"
+  "timestamp": "2026-07-10T15:02:18.019572+00:00"
 }
