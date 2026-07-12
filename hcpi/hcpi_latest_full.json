@@ -1,13 +1,13 @@
 {
-  "us_index": 4.8312,
+  "us_index": 4.8919,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 2.0082,
+    "US-Central": 2.7793,
     "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 3.1,
+    "US-Central": 2.93,
     "US-East": 1.98
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.0082,
-      "liquidity": 3.1,
+      "index": 2.7793,
+      "liquidity": 2.93,
       "num_providers": 6,
-      "total_gpus": 10,
+      "total_gpus": 9,
       "price_range": {
-        "min": 1.5751111111111111,
+        "min": 1.6016666666666666,
         "max": 15.67,
-        "median": 4.29
+        "median": 3.69
       }
     },
     "US-East": {
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.2052,
+      "category_index": 3.3384,
       "providers": [
         "Lambda Labs",
         "Paperspace"
@@ -73,11 +73,11 @@
       "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.1209
+        "US-Central": 3.3753
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.21
+        "US-Central": 1.57
       }
     },
     "Serverless": {
@@ -94,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5494,
+      "category_index": 1.5645,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -102,21 +102,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 9,
+      "total_gpus": 8,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.61,
+        "US-Central": 1.646,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 4.73,
+        "US-Central": 3.85,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-07-12T08:52:44.521863+00:00",
+    "timestamp": "2026-07-12T09:40:53.718654+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -133,7 +133,7 @@
     "total_listings": 15,
     "unique_providers": 10,
     "unique_providers_raw": 10,
-    "total_gpus": 19,
+    "total_gpus": 18,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -156,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-07-12T08:52:44.521863+00:00"
+  "timestamp": "2026-07-12T09:40:53.718654+00:00"
 }
