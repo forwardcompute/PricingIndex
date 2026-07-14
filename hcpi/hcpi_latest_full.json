@@ -1,13 +1,13 @@
 {
-  "us_index": 5.4101,
+  "us_index": 5.3619,
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 1.388,
+    "US-Central": 1.2574,
     "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 6.44,
+    "US-Central": 6.39,
     "US-East": 1.98
   },
   "regional_details": {
@@ -23,13 +23,13 @@
       }
     },
     "US-Central": {
-      "index": 1.388,
-      "liquidity": 6.44,
+      "index": 1.2574,
+      "liquidity": 6.39,
       "num_providers": 6,
       "total_gpus": 12,
       "price_range": {
-        "min": 1.363873015873016,
-        "max": 15.67,
+        "min": 1.2416507936507937,
+        "max": 16.36,
         "median": 4.29
       }
     },
@@ -65,17 +65,17 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.1209,
+      "category_index": 3.09,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-Central": 3.1209
+        "US-Central": 3.09
       },
       "regional_liquidities": {
-        "US-Central": 1.21
+        "US-Central": 1.2
       }
     },
     "Serverless": {
@@ -92,7 +92,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.3829,
+      "category_index": 1.2835,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -103,18 +103,18 @@
       "total_gpus": 11,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.3808,
+        "US-Central": 1.2534,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 6.42,
+        "US-Central": 6.37,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-07-14T20:33:08.409386+00:00",
+    "timestamp": "2026-07-14T21:27:32.307279+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -154,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-07-14T20:33:08.409386+00:00"
+  "timestamp": "2026-07-14T21:27:32.307279+00:00"
 }
