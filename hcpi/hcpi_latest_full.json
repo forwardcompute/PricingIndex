@@ -1,14 +1,14 @@
 {
-  "us_index": 5.2108,
+  "us_index": 5.1697,
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 2.7897,
-    "US-East": 7.0842
+    "US-Central": 2.0433,
+    "US-East": 6.8007
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 2.81,
-    "US-East": 1.98
+    "US-Central": 2.51,
+    "US-East": 2.86
   },
   "regional_details": {
     "US-West": {
@@ -23,25 +23,25 @@
       }
     },
     "US-Central": {
-      "index": 2.7897,
-      "liquidity": 2.81,
-      "num_providers": 6,
-      "total_gpus": 9,
+      "index": 2.0433,
+      "liquidity": 2.51,
+      "num_providers": 5,
+      "total_gpus": 8,
       "price_range": {
         "min": 1.4348148148148148,
         "max": 15.67,
-        "median": 3.69
+        "median": 3.09
       }
     },
     "US-East": {
-      "index": 7.0842,
-      "liquidity": 1.98,
-      "num_providers": 5,
-      "total_gpus": 6,
+      "index": 6.8007,
+      "liquidity": 2.86,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 0.79,
         "max": 12.84,
-        "median": 6.88
+        "median": 6.52
       }
     }
   },
@@ -65,17 +65,19 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.3753,
+      "category_index": 4.625,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-Central": 3.3753
+        "US-Central": 3.09,
+        "US-East": 6.16
       },
       "regional_liquidities": {
-        "US-Central": 1.57
+        "US-Central": 1.2,
+        "US-East": 1.2
       }
     },
     "Serverless": {
@@ -114,7 +116,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-07-16T12:45:41.137013+00:00",
+    "timestamp": "2026-07-16T13:39:39.020171+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -154,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-07-16T12:45:41.137013+00:00"
+  "timestamp": "2026-07-16T13:39:39.020171+00:00"
 }
