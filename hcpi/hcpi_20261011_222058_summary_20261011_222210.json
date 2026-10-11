@@ -1,0 +1,11 @@
+{
+  "us_index": 4.5486,
+  "timestamp": "2026-10-11T22:22:10.747026+00:00",
+  "regional_indices": {
+    "US-West": 8.5705,
+    "US-Central": 1.8873,
+    "US-East": 7.0842
+  },
+  "total_providers": 10,
+  "total_gpus": 18
+}
