@@ -1,30 +1,30 @@
 {
-  "us_index": 5.577,
+  "us_index": 5.5843,
   "regional_indices": {
-    "US-West": 8.5705,
-    "US-Central": 2.8749,
-    "US-East": 7.0842
+    "US-West": 9.0666,
+    "US-Central": 2.8654,
+    "US-East": 6.8007
   },
   "regional_liquidities": {
-    "US-West": 2.19,
-    "US-Central": 1.9,
-    "US-East": 1.98
+    "US-West": 2.0,
+    "US-Central": 1.85,
+    "US-East": 2.86
   },
   "regional_details": {
     "US-West": {
-      "index": 8.5705,
-      "liquidity": 2.19,
-      "num_providers": 4,
-      "total_gpus": 5,
+      "index": 9.0666,
+      "liquidity": 2.0,
+      "num_providers": 3,
+      "total_gpus": 3,
       "price_range": {
         "min": 1.99,
         "max": 12.29,
-        "median": 5.945
+        "median": 8.6
       }
     },
     "US-Central": {
-      "index": 2.8749,
-      "liquidity": 1.9,
+      "index": 2.8654,
+      "liquidity": 1.85,
       "num_providers": 5,
       "total_gpus": 5,
       "price_range": {
@@ -34,14 +34,14 @@
       }
     },
     "US-East": {
-      "index": 7.0842,
-      "liquidity": 1.98,
-      "num_providers": 5,
-      "total_gpus": 6,
+      "index": 6.8007,
+      "liquidity": 2.86,
+      "num_providers": 6,
+      "total_gpus": 7,
       "price_range": {
         "min": 0.79,
         "max": 12.84,
-        "median": 6.88
+        "median": 6.52
       }
     }
   },
@@ -65,19 +65,19 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.19,
+      "category_index": 4.625,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
       "total_gpus": 2,
       "regional_indices": {
-        "US-West": 3.29,
-        "US-Central": 3.09
+        "US-Central": 3.09,
+        "US-East": 6.16
       },
       "regional_liquidities": {
-        "US-West": 1.2,
-        "US-Central": 1.2
+        "US-Central": 1.2,
+        "US-East": 1.2
       }
     },
     "Serverless": {
@@ -94,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.5019,
+      "category_index": 1.5059,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -105,18 +105,18 @@
       "total_gpus": 5,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.6819,
+        "US-Central": 1.6821,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.12,
+        "US-Central": 1.18,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-10-12T19:19:02.209904+00:00",
+    "timestamp": "2026-10-12T20:24:41.309015+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -156,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-12T19:19:02.209904+00:00"
+  "timestamp": "2026-10-12T20:24:41.309015+00:00"
 }
