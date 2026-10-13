@@ -1,5 +1,5 @@
 {
-  "us_index": 5.6115,
+  "us_index": 5.6121,
   "regional_indices": {
     "US-West": 8.5705,
     "US-Central": 2.7228,
@@ -116,7 +116,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-10-13T01:45:59.853178+00:00",
+    "timestamp": "2026-10-13T02:43:11.209600+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -156,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-13T01:45:59.853178+00:00"
+  "timestamp": "2026-10-13T02:43:11.209600+00:00"
 }
