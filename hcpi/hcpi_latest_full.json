@@ -1,8 +1,8 @@
 {
-  "us_index": 5.9437,
+  "us_index": 5.9381,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 2.7568,
+    "US-Central": 2.7569,
     "US-East": 7.0842
   },
   "regional_liquidities": {
@@ -23,7 +23,7 @@
       }
     },
     "US-Central": {
-      "index": 2.7568,
+      "index": 2.7569,
       "liquidity": 2.16,
       "num_providers": 6,
       "total_gpus": 7,
@@ -94,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.7038,
+      "category_index": 1.7039,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -105,7 +105,7 @@
       "total_gpus": 6,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.9576,
+        "US-Central": 1.9579,
         "US-East": 0.7905
       },
       "regional_liquidities": {
@@ -116,7 +116,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-10-20T08:28:32.000614+00:00",
+    "timestamp": "2026-10-20T09:23:32.538532+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -156,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-20T08:28:32.000614+00:00"
+  "timestamp": "2026-10-20T09:23:32.538532+00:00"
 }
