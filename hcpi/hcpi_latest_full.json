@@ -1,80 +1,83 @@
 {
-  "us_index": 5.9078,
+  "us_index": 5.9501,
   "regional_indices": {
-    "US-West": 3.0918,
-    "US-Central": 2.8813,
-    "US-East": 2.8928
+    "US-West": 8.5705,
+    "US-Central": 2.8567,
+    "US-East": 7.0842
   },
   "regional_liquidities": {
-    "US-West": 1.49,
-    "US-Central": 1.93,
-    "US-East": 1.03
+    "US-West": 2.19,
+    "US-Central": 2.76,
+    "US-East": 1.98
   },
   "regional_details": {
     "US-West": {
-      "index": 3.0918,
-      "liquidity": 1.49,
-      "num_providers": 3,
-      "total_gpus": 3,
+      "index": 8.5705,
+      "liquidity": 2.19,
+      "num_providers": 4,
+      "total_gpus": 5,
       "price_range": {
         "min": 1.99,
-        "max": 8.6,
-        "median": 3.29
+        "max": 12.29,
+        "median": 5.945
       }
     },
     "US-Central": {
-      "index": 2.8813,
-      "liquidity": 1.93,
-      "num_providers": 4,
-      "total_gpus": 4,
+      "index": 2.8567,
+      "liquidity": 2.76,
+      "num_providers": 6,
+      "total_gpus": 8,
       "price_range": {
         "min": 1.54,
-        "max": 5.49,
-        "median": 2.7127777777777777
+        "max": 15.67,
+        "median": 3.69
       }
     },
     "US-East": {
-      "index": 2.8928,
-      "liquidity": 1.03,
-      "num_providers": 3,
-      "total_gpus": 3,
+      "index": 7.0842,
+      "liquidity": 1.98,
+      "num_providers": 5,
+      "total_gpus": 6,
       "price_range": {
         "min": 0.79,
-        "max": 6.88,
-        "median": 2.99
+        "max": 12.84,
+        "median": 6.88
       }
     }
   },
   "category_indices": {
     "Big 3 Hyperscalers": {
-      "category_index": 7.74,
+      "category_index": 12.0017,
       "providers": [
-        "AWS"
+        "AWS",
+        "Azure"
       ],
-      "total_gpus": 2,
+      "total_gpus": 6,
       "regional_indices": {
-        "US-West": 8.6,
-        "US-East": 6.88
+        "US-West": 9.3982,
+        "US-Central": 15.67,
+        "US-East": 11.8401
       },
       "regional_liquidities": {
-        "US-West": 1.5,
-        "US-East": 1.5
+        "US-West": 1.91,
+        "US-Central": 1.5,
+        "US-East": 3.21
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.19,
+      "category_index": 3.3384,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
-      "total_gpus": 2,
+      "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.09
+        "US-Central": 3.3753
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.2
+        "US-Central": 1.57
       }
     },
     "Serverless": {
@@ -91,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.4993,
+      "category_index": 1.7071,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -99,21 +102,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 5,
+      "total_gpus": 7,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.6793,
+        "US-Central": 1.8865,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.09,
+        "US-Central": 3.18,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-10-21T00:52:13.061163+00:00",
+    "timestamp": "2026-10-21T01:31:04.636009+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -127,10 +130,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 10,
-    "unique_providers": 9,
-    "unique_providers_raw": 9,
-    "total_gpus": 10,
+    "total_listings": 15,
+    "unique_providers": 10,
+    "unique_providers_raw": 10,
+    "total_gpus": 17,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -138,6 +141,7 @@
     ],
     "provider_list": [
       "AWS",
+      "Azure",
       "Jarvislabs",
       "Lambda Labs",
       "OVHcloud",
@@ -152,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-21T00:52:13.061163+00:00"
+  "timestamp": "2026-10-21T01:31:04.636009+00:00"
 }
