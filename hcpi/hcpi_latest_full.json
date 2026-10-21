@@ -1,13 +1,13 @@
 {
-  "us_index": 5.9316,
+  "us_index": 5.9299,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 2.7747,
+    "US-Central": 4.4892,
     "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 2.33,
+    "US-Central": 1.59,
     "US-East": 1.98
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.7747,
-      "liquidity": 2.33,
-      "num_providers": 5,
+      "index": 4.4892,
+      "liquidity": 1.59,
+      "num_providers": 6,
       "total_gpus": 6,
       "price_range": {
         "min": 1.54,
-        "max": 15.67,
-        "median": 3.09
+        "max": 16.36,
+        "median": 4.29
       }
     },
     "US-East": {
@@ -70,7 +70,7 @@
         "Lambda Labs",
         "Paperspace"
       ],
-      "total_gpus": 2,
+      "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
         "US-Central": 3.09
@@ -94,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.8201,
+      "category_index": 1.5019,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -102,21 +102,21 @@
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 6,
+      "total_gpus": 5,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 2.1828,
+        "US-Central": 1.6819,
         "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 2.13,
+        "US-Central": 1.12,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-10-21T04:25:38.830466+00:00",
+    "timestamp": "2026-10-21T05:22:22.706375+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -130,7 +130,7 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 14,
+    "total_listings": 15,
     "unique_providers": 10,
     "unique_providers_raw": 10,
     "total_gpus": 15,
@@ -156,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-21T04:25:38.830466+00:00"
+  "timestamp": "2026-10-21T05:22:22.706375+00:00"
 }
