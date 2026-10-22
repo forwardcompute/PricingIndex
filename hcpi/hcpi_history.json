@@ -1,19 +1,5 @@
 [
   {
-    "timestamp": "2025-10-22T20:25:30Z",
-    "us_index": 2.6434,
-    "US-East": 4.6093,
-    "US-Central": 2.3912,
-    "US-West": 2.3858
-  },
-  {
-    "timestamp": "2025-10-22T21:19:15Z",
-    "us_index": 2.6572,
-    "US-East": 4.685,
-    "US-Central": 2.3904,
-    "US-West": 2.3978
-  },
-  {
     "timestamp": "2025-10-22T22:18:58Z",
     "us_index": 2.6623,
     "US-East": 4.7607,
@@ -54170,6 +54156,13 @@
     "us_index": 6.0617,
     "US-East": 6.9097,
     "US-Central": 2.7553,
+    "US-West": 8.8941
+  },
+  {
+    "timestamp": "2026-10-22T21:20:15.742081+00:00",
+    "us_index": 6.0621,
+    "US-East": 6.9097,
+    "US-Central": 2.7515,
     "US-West": 8.8941
   }
 ]
