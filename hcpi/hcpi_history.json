@@ -1,12 +1,5 @@
 [
   {
-    "timestamp": "2025-10-22T11:20:36Z",
-    "us_index": 2.5075,
-    "US-East": 3.777,
-    "US-Central": 2.3537,
-    "US-West": 2.2827
-  },
-  {
     "timestamp": "2025-10-22T12:43:59Z",
     "us_index": 2.5182,
     "US-East": 3.8429,
@@ -54233,6 +54226,13 @@
     "us_index": 6.0287,
     "US-East": 6.9038,
     "US-Central": 2.7234,
+    "US-West": 8.9044
+  },
+  {
+    "timestamp": "2026-10-22T12:33:16.625644+00:00",
+    "us_index": 6.0318,
+    "US-East": 6.9038,
+    "US-Central": 2.7265,
     "US-West": 8.9044
   }
 ]
