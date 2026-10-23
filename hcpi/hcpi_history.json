@@ -1,40 +1,5 @@
 [
   {
-    "timestamp": "2025-10-23T18:32:04Z",
-    "us_index": 2.9385,
-    "US-East": 6.0791,
-    "US-Central": 2.4654,
-    "US-West": 2.6116
-  },
-  {
-    "timestamp": "2025-10-23T18:51:28Z",
-    "us_index": 2.9519,
-    "US-East": 6.1556,
-    "US-Central": 2.4723,
-    "US-West": 2.604
-  },
-  {
-    "timestamp": "2025-10-23T19:11:45Z",
-    "us_index": 2.9617,
-    "US-East": 6.2358,
-    "US-Central": 2.4709,
-    "US-West": 2.6132
-  },
-  {
-    "timestamp": "2025-10-23T19:42:21Z",
-    "us_index": 2.9624,
-    "US-East": 6.2231,
-    "US-Central": 2.4753,
-    "US-West": 2.6053
-  },
-  {
-    "timestamp": "2025-10-23T19:59:55Z",
-    "us_index": 2.9593,
-    "US-East": 6.2098,
-    "US-Central": 2.4737,
-    "US-West": 2.597
-  },
-  {
     "timestamp": "2025-10-23T21:19:11Z",
     "us_index": 2.955,
     "US-East": 6.1958,
@@ -54142,6 +54107,13 @@
     "us_index": 6.034,
     "US-East": 6.9215,
     "US-Central": 2.7327,
+    "US-West": 8.8631
+  },
+  {
+    "timestamp": "2026-10-23T20:21:58.970802+00:00",
+    "us_index": 6.0319,
+    "US-East": 6.9215,
+    "US-Central": 2.7333,
     "US-West": 8.8631
   }
 ]
