@@ -1,13 +1,13 @@
 {
-  "us_index": 6.0316,
+  "us_index": 6.0311,
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 2.8987,
+    "US-Central": 4.7029,
     "US-East": 6.9367
   },
   "regional_liquidities": {
     "US-West": 2.0,
-    "US-Central": 1.99,
+    "US-Central": 1.43,
     "US-East": 2.8
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 2.8987,
-      "liquidity": 1.99,
-      "num_providers": 5,
-      "total_gpus": 5,
+      "index": 4.7029,
+      "liquidity": 1.43,
+      "num_providers": 4,
+      "total_gpus": 4,
       "price_range": {
         "min": 1.54,
         "max": 15.67,
-        "median": 3.09
+        "median": 4.29
       }
     },
     "US-East": {
@@ -94,28 +94,27 @@
       }
     },
     "Specialized": {
-      "category_index": 2.1887,
+      "category_index": 2.1733,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
-        "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 4,
+      "total_gpus": 3,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.6703,
+        "US-Central": 1.54,
         "US-East": 2.99
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.05,
+        "US-Central": 0.9,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-10-30T14:17:45.311825+00:00",
+    "timestamp": "2026-10-30T15:15:27.382631+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -129,10 +128,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 13,
-    "unique_providers": 9,
-    "unique_providers_raw": 9,
-    "total_gpus": 13,
+    "total_listings": 12,
+    "unique_providers": 8,
+    "unique_providers_raw": 8,
+    "total_gpus": 12,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -146,7 +145,6 @@
       "OVHcloud",
       "Paperspace",
       "Replicate",
-      "Vast.ai",
       "Voltage Park"
     ],
     "price_bounds_applied": {
@@ -154,5 +152,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-10-30T14:17:45.311825+00:00"
+  "timestamp": "2026-10-30T15:15:27.382631+00:00"
 }
