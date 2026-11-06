@@ -1,14 +1,14 @@
 {
-  "us_index": 6.224,
+  "us_index": 6.22,
   "regional_indices": {
     "US-West": 9.0666,
     "US-Central": 2.7968,
-    "US-East": 6.8007
+    "US-East": 6.9367
   },
   "regional_liquidities": {
     "US-West": 2.0,
     "US-Central": 2.42,
-    "US-East": 2.86
+    "US-East": 2.8
   },
   "regional_details": {
     "US-West": {
@@ -34,14 +34,14 @@
       }
     },
     "US-East": {
-      "index": 6.8007,
-      "liquidity": 2.86,
-      "num_providers": 6,
-      "total_gpus": 7,
+      "index": 6.9367,
+      "liquidity": 2.8,
+      "num_providers": 5,
+      "total_gpus": 6,
       "price_range": {
-        "min": 0.79,
+        "min": 2.99,
         "max": 12.84,
-        "median": 6.52
+        "median": 6.88
       }
     }
   },
@@ -94,19 +94,18 @@
       }
     },
     "Specialized": {
-      "category_index": 1.8695,
+      "category_index": 2.3763,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
-        "Scaleway",
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 6,
+      "total_gpus": 5,
       "regional_indices": {
         "US-West": 1.99,
         "US-Central": 2.2792,
-        "US-East": 0.7905
+        "US-East": 2.99
       },
       "regional_liquidities": {
         "US-West": 0.9,
@@ -116,7 +115,7 @@
     }
   },
   "metadata": {
-    "timestamp": "2026-11-06T07:15:19.583848+00:00",
+    "timestamp": "2026-11-06T08:19:31.219432+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -130,10 +129,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 14,
-    "unique_providers": 10,
-    "unique_providers_raw": 10,
-    "total_gpus": 15,
+    "total_listings": 13,
+    "unique_providers": 9,
+    "unique_providers_raw": 9,
+    "total_gpus": 14,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -147,7 +146,6 @@
       "OVHcloud",
       "Paperspace",
       "Replicate",
-      "Scaleway",
       "Vast.ai",
       "Voltage Park"
     ],
@@ -156,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-11-06T07:15:19.583848+00:00"
+  "timestamp": "2026-11-06T08:19:31.219432+00:00"
 }
