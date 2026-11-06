@@ -1,9 +1,9 @@
 {
-  "us_index": 6.2632,
-  "timestamp": "2026-11-06T00:34:48.512085+00:00",
+  "us_index": 6.2638,
+  "timestamp": "2026-11-06T01:17:16.675145+00:00",
   "regional_indices": {
     "US-West": 9.0666,
-    "US-Central": 2.8987,
+    "US-Central": 2.8814,
     "US-East": 6.9367
   },
   "total_providers": 9,
