@@ -2,12 +2,12 @@
   "us_index": 6.1266,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 1.5784,
+    "US-Central": 1.5566,
     "US-East": 11.5911
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 5.42,
+    "US-Central": 5.43,
     "US-East": 3.3
   },
   "regional_details": {
@@ -23,14 +23,14 @@
       }
     },
     "US-Central": {
-      "index": 1.5784,
-      "liquidity": 5.42,
+      "index": 1.5566,
+      "liquidity": 5.43,
       "num_providers": 6,
       "total_gpus": 10,
       "price_range": {
-        "min": 1.54,
-        "max": 16.36,
-        "median": 4.29
+        "min": 1.536,
+        "max": 15.67,
+        "median": 3.69
       }
     },
     "US-East": {
@@ -65,7 +65,7 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.19,
+      "category_index": 3.3384,
       "providers": [
         "Lambda Labs",
         "Paperspace"
@@ -73,11 +73,11 @@
       "total_gpus": 3,
       "regional_indices": {
         "US-West": 3.29,
-        "US-Central": 3.09
+        "US-Central": 3.3753
       },
       "regional_liquidities": {
         "US-West": 1.2,
-        "US-Central": 1.2
+        "US-Central": 1.57
       }
     },
     "Serverless": {
@@ -94,7 +94,7 @@
       }
     },
     "Specialized": {
-      "category_index": 1.7937,
+      "category_index": 1.7752,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
@@ -104,18 +104,18 @@
       "total_gpus": 8,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.5599,
+        "US-Central": 1.5367,
         "US-East": 2.99
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 5.36,
+        "US-Central": 5.39,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-11-07T10:12:38.571748+00:00",
+    "timestamp": "2026-11-07T11:11:31.806517+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -154,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-11-07T10:12:38.571748+00:00"
+  "timestamp": "2026-11-07T11:11:31.806517+00:00"
 }
