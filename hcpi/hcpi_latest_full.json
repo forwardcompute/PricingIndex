@@ -2,12 +2,12 @@
   "us_index": 6.1266,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 2.5204,
+    "US-Central": 1.6989,
     "US-East": 11.5911
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 2.15,
+    "US-Central": 6.19,
     "US-East": 3.3
   },
   "regional_details": {
@@ -23,12 +23,12 @@
       }
     },
     "US-Central": {
-      "index": 2.5204,
-      "liquidity": 2.15,
+      "index": 1.6989,
+      "liquidity": 6.19,
       "num_providers": 6,
-      "total_gpus": 9,
+      "total_gpus": 11,
       "price_range": {
-        "min": 1.336111111111111,
+        "min": 1.54,
         "max": 16.36,
         "median": 4.29
       }
@@ -94,28 +94,28 @@
       }
     },
     "Specialized": {
-      "category_index": 1.7035,
+      "category_index": 1.8611,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 7,
+      "total_gpus": 9,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.364,
+        "US-Central": 1.6752,
         "US-East": 2.99
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 4.17,
+        "US-Central": 6.09,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-11-07T14:12:26.477369+00:00",
+    "timestamp": "2026-11-07T15:12:09.289153+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -132,7 +132,7 @@
     "total_listings": 14,
     "unique_providers": 9,
     "unique_providers_raw": 9,
-    "total_gpus": 17,
+    "total_gpus": 19,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -154,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-11-07T14:12:26.477369+00:00"
+  "timestamp": "2026-11-07T15:12:09.289153+00:00"
 }
