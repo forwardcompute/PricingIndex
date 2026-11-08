@@ -1,14 +1,14 @@
 {
-  "us_index": 6.0868,
+  "us_index": 6.002,
   "regional_indices": {
     "US-West": 8.5705,
-    "US-Central": 2.7968,
-    "US-East": 11.5911
+    "US-Central": 1.5538,
+    "US-East": 7.0842
   },
   "regional_liquidities": {
     "US-West": 2.19,
-    "US-Central": 2.42,
-    "US-East": 3.3
+    "US-Central": 5.42,
+    "US-East": 1.98
   },
   "regional_details": {
     "US-West": {
@@ -23,25 +23,25 @@
       }
     },
     "US-Central": {
-      "index": 2.7968,
-      "liquidity": 2.42,
+      "index": 1.5538,
+      "liquidity": 5.42,
       "num_providers": 5,
-      "total_gpus": 6,
+      "total_gpus": 9,
       "price_range": {
-        "min": 1.54,
+        "min": 1.536,
         "max": 15.67,
         "median": 3.09
       }
     },
     "US-East": {
-      "index": 11.5911,
-      "liquidity": 3.3,
-      "num_providers": 4,
-      "total_gpus": 5,
+      "index": 7.0842,
+      "liquidity": 1.98,
+      "num_providers": 5,
+      "total_gpus": 6,
       "price_range": {
-        "min": 2.99,
+        "min": 0.79,
         "max": 12.84,
-        "median": 9.584999999999999
+        "median": 6.88
       }
     }
   },
@@ -94,28 +94,29 @@
       }
     },
     "Specialized": {
-      "category_index": 2.3763,
+      "category_index": 1.5,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
+        "Scaleway",
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 5,
+      "total_gpus": 9,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 2.2792,
-        "US-East": 2.99
+        "US-Central": 1.5367,
+        "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 2.11,
+        "US-Central": 5.39,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-11-08T10:13:28.172157+00:00",
+    "timestamp": "2026-11-08T11:11:35.103485+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -129,10 +130,10 @@
       "Specialized": 0.9,
       "Other": 0.8
     },
-    "total_listings": 13,
-    "unique_providers": 9,
-    "unique_providers_raw": 9,
-    "total_gpus": 14,
+    "total_listings": 14,
+    "unique_providers": 10,
+    "unique_providers_raw": 10,
+    "total_gpus": 18,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -146,6 +147,7 @@
       "OVHcloud",
       "Paperspace",
       "Replicate",
+      "Scaleway",
       "Vast.ai",
       "Voltage Park"
     ],
@@ -154,5 +156,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-11-08T10:13:28.172157+00:00"
+  "timestamp": "2026-11-08T11:11:35.103485+00:00"
 }
