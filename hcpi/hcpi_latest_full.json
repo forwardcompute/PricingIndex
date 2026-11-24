@@ -1,32 +1,32 @@
 {
-  "us_index": 5.7469,
+  "us_index": 5.7043,
   "regional_indices": {
-    "US-West": 8.5358,
-    "US-Central": 4.4701,
-    "US-East": 11.5911
+    "US-West": 9.0666,
+    "US-Central": 1.794,
+    "US-East": 7.0842
   },
   "regional_liquidities": {
-    "US-West": 2.23,
-    "US-Central": 1.61,
-    "US-East": 3.3
+    "US-West": 2.0,
+    "US-Central": 5.23,
+    "US-East": 1.98
   },
   "regional_details": {
     "US-West": {
-      "index": 8.5358,
-      "liquidity": 2.23,
-      "num_providers": 4,
-      "total_gpus": 5,
+      "index": 9.0666,
+      "liquidity": 2.0,
+      "num_providers": 3,
+      "total_gpus": 3,
       "price_range": {
         "min": 1.99,
         "max": 12.29,
-        "median": 6.195
+        "median": 8.6
       }
     },
     "US-Central": {
-      "index": 4.4701,
-      "liquidity": 1.61,
+      "index": 1.794,
+      "liquidity": 5.23,
       "num_providers": 6,
-      "total_gpus": 6,
+      "total_gpus": 10,
       "price_range": {
         "min": 1.54,
         "max": 18.76,
@@ -34,14 +34,14 @@
       }
     },
     "US-East": {
-      "index": 11.5911,
-      "liquidity": 3.3,
-      "num_providers": 4,
-      "total_gpus": 5,
+      "index": 7.0842,
+      "liquidity": 1.98,
+      "num_providers": 5,
+      "total_gpus": 6,
       "price_range": {
-        "min": 2.99,
+        "min": 0.79,
         "max": 12.84,
-        "median": 9.584999999999999
+        "median": 6.88
       }
     }
   },
@@ -65,18 +65,16 @@
       }
     },
     "Major GPU Clouds": {
-      "category_index": 3.44,
+      "category_index": 3.09,
       "providers": [
         "Lambda Labs",
         "Paperspace"
       ],
-      "total_gpus": 3,
+      "total_gpus": 2,
       "regional_indices": {
-        "US-West": 3.79,
         "US-Central": 3.09
       },
       "regional_liquidities": {
-        "US-West": 1.2,
         "US-Central": 1.2
       }
     },
@@ -94,28 +92,29 @@
       }
     },
     "Specialized": {
-      "category_index": 2.1887,
+      "category_index": 1.6622,
       "providers": [
         "Jarvislabs",
         "OVHcloud",
+        "Scaleway",
         "Vast.ai",
         "Voltage Park"
       ],
-      "total_gpus": 4,
+      "total_gpus": 9,
       "regional_indices": {
         "US-West": 1.99,
-        "US-Central": 1.6703,
-        "US-East": 2.99
+        "US-Central": 1.7583,
+        "US-East": 0.7905
       },
       "regional_liquidities": {
         "US-West": 0.9,
-        "US-Central": 1.05,
+        "US-Central": 5.09,
         "US-East": 0.9
       }
     }
   },
   "metadata": {
-    "timestamp": "2026-11-24T04:52:13.813942+00:00",
+    "timestamp": "2026-11-24T05:15:40.553614+00:00",
     "lambda": 3.0,
     "methodology": "ORNN",
     "market_weighted": true,
@@ -130,9 +129,9 @@
       "Other": 0.8
     },
     "total_listings": 14,
-    "unique_providers": 9,
-    "unique_providers_raw": 9,
-    "total_gpus": 14,
+    "unique_providers": 10,
+    "unique_providers_raw": 10,
+    "total_gpus": 18,
     "regions_covered": [
       "US-West",
       "US-Central",
@@ -146,6 +145,7 @@
       "OVHcloud",
       "Paperspace",
       "Replicate",
+      "Scaleway",
       "Vast.ai",
       "Voltage Park"
     ],
@@ -154,5 +154,5 @@
       "max": 20.0
     }
   },
-  "timestamp": "2026-11-24T04:52:13.813942+00:00"
+  "timestamp": "2026-11-24T05:15:40.553614+00:00"
 }
